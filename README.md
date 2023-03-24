@@ -1,6 +1,6 @@
 # brainmontageplot
 
-Generate brain surface ROI figures multiple viewpoints and combine them together.
+Generate brain surface ROI figures multiple viewpoints and combine them together. Can be used from command line.
 
 Requirements: python3, nilearn (for main plotting functions), numpy, scipy, nibabel, PIL, pandas
 
@@ -27,8 +27,8 @@ python brainmontage.py
 [--annotsurfacename ANNOTSURFACE]  surface on which annot files are defined (default:fsaverage5)
 ```
 
-Example:
+Example command-line usage:
 ```
-python brainmontage.py --input mydata_fs86.mat --inputfield data --atlasname fs86 --outputimage mydata_montage.png --colormap hot --clim -1 1
+python brainmontage.py --input mydata_fs86.mat --inputfield data --atlasname fs86 --outputimage mydata_montage.png --colormap magma --clim -1 1
 ```
 ![example output montage](mydata_montage.png)
