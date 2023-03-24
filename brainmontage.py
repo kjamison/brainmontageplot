@@ -169,6 +169,8 @@ def save_surf_fig(roivals,lhannotfile,rhannotfile,roilutfile,annotsurfacename='f
     
     if viewnames is None or len(viewnames)==0:
         viewnames=['dorsal','lateral','medial','ventral']
+    elif "all" in [v.lower() for v in viewnames]:
+        viewnames=['dorsal','lateral','medial','ventral']
     
     fsaverage = datasets.fetch_surf_fsaverage(mesh=annotsurfacename)
     
