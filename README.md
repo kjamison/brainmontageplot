@@ -1,3 +1,34 @@
 # brainmontageplot
 
 Generate brain surface ROI figures multiple viewpoints and combine them together.
+
+Requirements: python3, nilearn (for main plotting functions), numpy, scipy, nibabel, PIL, pandas
+
+[atlas_info.json](atlas_info.json) contains information about the currently supported atlases to map ROIs to surface vertices.
+* fs86: FreeSurfer Desikan-Killiany 68 cortical gyri + 18 aseg subcortical. **Currently the only supported atlas**
+
+Usage:
+```
+python brainmontage.py 
+--input INPUTFILE                  file with value for each ROI. Can be .txt or .mat
+[--inputfield INPUTFIELDNAME]      for .mat input with multiple variables, which variable name to use
+--views VIEWNAME VIEWNAME ...      choose from: dorsal, lateral, medial, ventral. default: all
+--outputimage OUTPUTIMAGE          image file to save final montage
+--surftype SURFTYPE                choose from: infl, white, pial. default: infl
+--colormap CMAPNAME                colormap name from matplotlib colormaps
+--clim MIN MAX                     colormap value range
+[--noshading]                      don't apply surface lighting
+#atlas info option 1:
+[--atlasname ATLASNAME]            atlas name for entry in atlas_info.json
+#atlas info option 2:
+[--roilut ROILUTFILE]              if not providing atlasname, must provide roilut, lhannot, rhannot files
+[--lhannot LHANNOTFILE]
+[--rhannot RHANNOTFILE]
+[--annotsurfacename ANNOTSURFACE]  surface on which annot files are defined (default:fsaverage5)
+```
+
+Example:
+```
+python brainmontage.py --input mydata_fs86.mat --inputfield data --atlasname fs86 --outputimage mydata_montage.png --colormap hot --clim -1 1
+```
+![example output montage](mydata_montage.png)
