@@ -31,4 +31,17 @@ Example command-line usage:
 ```
 python brainmontage.py --input mydata_fs86.mat --inputfield data --atlasname fs86 --outputimage mydata_montage.png --colormap magma --clim -1 1
 ```
+
+Example python function usage:
+```python
+import numpy as np
+from brainmontage import save_montage_figure, retrieve_atlas_info
+atlas_info=retrieve_atlas_info('fs86')
+
+roivals=np.arange(86) #example values for each ROI
+
+save_montage_figure(roivals,atlasinfo=atlas_info,
+    viewnames='all',surftype='infl',clim=[0,86],colormap='magma',
+    outputimagefile='mydata_montage.png')
+```
 ![example output montage](mydata_montage.png)
