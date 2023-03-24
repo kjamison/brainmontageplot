@@ -72,6 +72,7 @@ def padimage(img,bgcolor=None,padamount=None,padfinalsize=None):
         
     elif padamount is not None:
         try:
+            #test if iterable
             for i in padamount:
                 pass
         except:
@@ -159,18 +160,62 @@ def fig2pixels(fig,imgbuffer=None):
     img=Image.open(imgbuffer,'r')
     return np.asarray(img)
 
-def save_surf_fig(roivals,lhannotfile,rhannotfile,roilutfile,annotsurfacename='fsaverage5',
-    lhannotprefix=None, rhannotprefix=None,
-    viewnames=None,surftype='infl',clim=None,colormap=None, shading=False,
+def retrieve_atlas_info(atlasname, atlasinfo_jsonfile=None, scriptdir=None):
+    if scriptdir is None:
+        scriptdir=os.path.realpath(os.path.dirname(__file__))
+    if atlasinfo_jsonfile is None:
+        atlasinfo_jsonfile="%s/atlas_info.json" % (scriptdir)
+    
+    lhannotprefix=None
+    rhannotprefix=None
+
+    with open(atlasinfo_jsonfile,'r') as f:
+        atlas_info_list=json.load(f)
+    
+    if atlasname in atlas_info_list:
+        roilutfile=atlas_info_list[atlasname]['roilut'].replace('%SCRIPTDIR%',scriptdir)
+        lhannotfile=atlas_info_list[atlasname]['lhannot'].replace('%SCRIPTDIR%',scriptdir)
+        rhannotfile=atlas_info_list[atlasname]['rhannot'].replace('%SCRIPTDIR%',scriptdir)
+        if 'lhannotprefix' in atlas_info_list[atlasname]:
+            lhannotprefix=atlas_info_list[atlasname]['lhannotprefix']
+        if 'rhannotprefix' in atlas_info_list[atlasname]:
+            rhannotprefix=atlas_info_list[atlasname]['rhannotprefix']
+        annotsurfacename=atlas_info_list[atlasname]['annotsurface']
+    else:
+        raise Exception("atlas name '%s' not found. Choose from %s" % (atlasname, ",".join(atlas_info_list.keys())))
+    
+    atlasinfo={'atlasname':atlasname,'roilutfile':roilutfile,'lhannotfile':lhannotfile,'rhannotfile':rhannotfile,
+        'annotsurfacename':annotsurfacename,'lhannotprefix':lhannotprefix,'rhannotprefix':rhannotprefix}
+    
+    return atlasinfo
+
+def save_montage_figure(roivals,atlasinfo=None,
+    roilutfile=None,lhannotfile=None,rhannotfile=None,annotsurfacename='fsaverage5',lhannotprefix=None, rhannotprefix=None,
+    viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False,
     outputimagefile=None):
     
     if clim is None or len(clim)==0:
         clim=[np.nanmin(roivals), np.nanmax(roivals)]
     
+    if viewnames is not None and isinstance(viewnames,str):
+        #make sure viewnames is iterable
+        viewnames=[viewnames]
+            
     if viewnames is None or len(viewnames)==0:
         viewnames=['dorsal','lateral','medial','ventral']
     elif "all" in [v.lower() for v in viewnames]:
         viewnames=['dorsal','lateral','medial','ventral']
+    
+    if atlasinfo is not None:
+        roilutfile=atlasinfo['roilutfile']
+        lhannotfile=atlasinfo['lhannotfile']
+        rhannotfile=atlasinfo['rhannotfile']
+        annotsurfacename=atlasinfo['annotsurfacename']
+        lhannotprefix=atlasinfo['lhannotprefix']
+        rhannotprefix=atlasinfo['rhannotprefix']
+    
+    #just to make things easier now that we are inside the function
+    shading=not noshading
     
     fsaverage = datasets.fetch_surf_fsaverage(mesh=annotsurfacename)
     
@@ -369,7 +414,7 @@ def run_surfplot(argv):
     roilutfile=args.roilutfile
     lhannotfile=args.lhannotfile
     rhannotfile=args.rhannotfile
-    do_shading=not args.noshading
+    no_shading=args.noshading
     annotsurfacename=args.annotsurface
     
     if len(clim)==2:
@@ -383,7 +428,7 @@ def run_surfplot(argv):
     elif cmapname.lower()=='spectral_r':
         cmapname='Spectral_r'
     
-    roivals=np.arange(86)+1
+    #roivals=np.arange(86)+1
     
     if inputfile is None:
         inputfile=""
@@ -401,32 +446,14 @@ def run_surfplot(argv):
             roivals=Mroivals[inputfieldname]
         else:
             raise Exception("Multiple data fields found in %s. Specify one with --inputfield")
+    else:
+        raise Exception("Invalid inputfile: %s" % (inputfile))
     
-    scriptdir=os.path.realpath(os.path.dirname(__file__))
-    atlasinfo_jsonfile="%s/atlas_info.json" % (scriptdir)
-    
-    lhannotprefix=None
-    rhannotprefix=None
     atlasname=args.atlasname.lower()
-    if atlasname:
-        with open(atlasinfo_jsonfile,'r') as f:
-            atlas_info=json.load(f)
-        
-        if atlasname in atlas_info:
-            roilutfile=atlas_info[atlasname]['roilut'].replace('%SCRIPTDIR%',scriptdir)
-            lhannotfile=atlas_info[atlasname]['lhannot'].replace('%SCRIPTDIR%',scriptdir)
-            rhannotfile=atlas_info[atlasname]['rhannot'].replace('%SCRIPTDIR%',scriptdir)
-            if 'lhannotprefix' in atlas_info[atlasname]:
-                lhannotprefix=atlas_info[atlasname]['lhannotprefix']
-            if 'rhannotprefix' in atlas_info[atlasname]:
-                rhannotprefix=atlas_info[atlasname]['rhannotprefix']
-            annotsurfacename=atlas_info[atlasname]['annotsurface']
-        else:
-            raise Exception("atlas name '%s' not found. Choose from %s" % (atlasname, ",".join(atlas_info.keys())))
+    atlas_info=retrieve_atlas_info(atlasname)
     
-    img=save_surf_fig(roivals,lhannotfile,rhannotfile,roilutfile,annotsurfacename=annotsurfacename,
-        lhannotprefix=lhannotprefix, rhannotprefix=rhannotprefix,
-        viewnames=viewnames,surftype=surftype,clim=clim,colormap=cmapname,shading=do_shading,
+    img=save_montage_figure(roivals,atlasinfo=atlas_info,
+        viewnames=viewnames,surftype=surftype,clim=clim,colormap=cmapname,noshading=no_shading,
         outputimagefile=outputimage)
     
 if __name__ == "__main__":
