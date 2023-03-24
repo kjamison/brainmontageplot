@@ -403,6 +403,8 @@ def run_surfplot(argv):
     scriptdir=os.path.realpath(os.path.dirname(__file__))
     atlasinfo_jsonfile="%s/atlas_info.json" % (scriptdir)
     
+    lhannotprefix=None
+    rhannotprefix=None
     atlasname=args.atlasname.lower()
     if atlasname:
         with open(atlasinfo_jsonfile,'r') as f:
@@ -412,8 +414,10 @@ def run_surfplot(argv):
             roilutfile=atlas_info[atlasname]['roilut'].replace('%SCRIPTDIR%',scriptdir)
             lhannotfile=atlas_info[atlasname]['lhannot'].replace('%SCRIPTDIR%',scriptdir)
             rhannotfile=atlas_info[atlasname]['rhannot'].replace('%SCRIPTDIR%',scriptdir)
-            lhannotprefix=atlas_info[atlasname]['lhannotprefix']
-            rhannotprefix=atlas_info[atlasname]['rhannotprefix']
+            if 'lhannotprefix' in atlas_info[atlasname]:
+                lhannotprefix=atlas_info[atlasname]['lhannotprefix']
+            if 'rhannotprefix' in atlas_info[atlasname]:
+                rhannotprefix=atlas_info[atlasname]['rhannotprefix']
             annotsurfacename=atlas_info[atlasname]['annotsurface']
         else:
             raise Exception("atlas name '%s' not found. Choose from %s" % (atlasname, ",".join(atlas_info.keys())))
