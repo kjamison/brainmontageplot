@@ -15,7 +15,7 @@ from scipy.io import loadmat
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
 
-def parse_argument_surfplot(argv):
+def parse_argument_montageplot(argv):
     parser=argparse.ArgumentParser(description='save surface ROI montage')
     
     parser.add_argument('--input',action='store',dest='inputfile')
@@ -26,11 +26,13 @@ def parse_argument_surfplot(argv):
     parser.add_argument('--cmap','--colormap',action='store',dest='cmapname',default='magma')
     parser.add_argument('--clim', action='append',dest='clim',nargs=2)
     parser.add_argument('--roilut',action='store',dest='roilutfile')
+    parser.add_argument('--atlasname',action='store',dest='atlasname')
     parser.add_argument('--lhannot',action='store',dest='lhannotfile')
     parser.add_argument('--rhannot',action='store',dest='rhannotfile')
+    parser.add_argument('--lhannotprefix',action='store',dest='lhannotprefix')
+    parser.add_argument('--rhannotprefix',action='store',dest='rhannotprefix')
     parser.add_argument('--annotsurfacename',action='store',dest='annotsurface',default='fsaverage5')
     parser.add_argument('--noshading',action='store_true',dest='noshading')
-    parser.add_argument('--atlasname',action='store',dest='atlasname')
     
     return parser.parse_args(argv)
 
@@ -160,6 +162,55 @@ def fig2pixels(fig,imgbuffer=None):
     img=Image.open(imgbuffer,'r')
     return np.asarray(img)
 
+def roi2surf(roivals,atlasinfo):
+    lhannotprefix=None
+    rhannotprefix=None
+    roilutfile=atlasinfo['roilutfile']
+    lhannotfile=atlasinfo['lhannotfile']
+    rhannotfile=atlasinfo['rhannotfile']
+    if 'lhannotprefix' in atlasinfo:
+        lhannotprefix=atlasinfo['lhannotprefix']
+    if 'rhannotprefix' in atlasinfo:
+        rhannotprefix=atlasinfo['rhannotprefix']
+    
+    lhlabels,ctab,lhnames=nib.freesurfer.io.read_annot(lhannotfile)
+    lhnames=[(x.decode('UTF-8')) for x in lhnames]
+    if lhannotprefix is not None:
+        lhnames=['%s%s' % (lhannotprefix,x) for x in lhnames]
+
+    rhlabels,ctab,rhnames=nib.freesurfer.io.read_annot(rhannotfile)
+    rhnames=[(x.decode('UTF-8')) for x in rhnames]
+    if rhannotprefix is not None:
+        rhnames=['%s%s' % (rhannotprefix,x) for x in rhnames]
+
+    Troi=pd.read_table(roilutfile,delimiter='\s+',header=None,names=['label','name','R','G','B'])
+    Troi=Troi[Troi['name']!='Unknown']
+
+    lhannotval=np.zeros(Troi.shape[0])
+    rhannotval=np.zeros(Troi.shape[0])
+    for i,n86 in enumerate(Troi['name']):
+        lhidx=[j for j,nannot in enumerate(lhnames) if nannot==n86]
+        rhidx=[j for j,nannot in enumerate(rhnames) if nannot==n86]
+        if len(lhidx)==1:
+            lhannotval[i]=lhidx[0]
+        elif len(rhidx)==1:
+            rhannotval[i]=rhidx[0]
+    
+    Troi['lhannot']=lhannotval
+    Troi['rhannot']=rhannotval
+    
+    surfvalsLR={}
+    surfvalsLR['left']=np.zeros(lhlabels.shape)
+    surfvalsLR['right']=np.zeros(rhlabels.shape)
+    for i in range(Troi.shape[0]):
+        v=roivals[i]
+        if Troi['lhannot'].iloc[i]>0:
+            surfvalsLR['left'][lhlabels==Troi['lhannot'].iloc[i]]=v
+        elif Troi['rhannot'].iloc[i]>0:
+            surfvalsLR['right'][rhlabels==Troi['rhannot'].iloc[i]]=v
+            
+    return surfvalsLR
+
 def retrieve_atlas_info(atlasname, atlasinfo_jsonfile=None, scriptdir=None):
     if scriptdir is None:
         scriptdir=os.path.realpath(os.path.dirname(__file__))
@@ -189,7 +240,7 @@ def retrieve_atlas_info(atlasname, atlasinfo_jsonfile=None, scriptdir=None):
     
     return atlasinfo
 
-def save_montage_figure(roivals,atlasinfo=None,
+def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     roilutfile=None,lhannotfile=None,rhannotfile=None,annotsurfacename='fsaverage5',lhannotprefix=None, rhannotprefix=None,
     viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False,
     outputimagefile=None):
@@ -206,44 +257,21 @@ def save_montage_figure(roivals,atlasinfo=None,
     elif "all" in [v.lower() for v in viewnames]:
         viewnames=['dorsal','lateral','medial','ventral']
     
-    if atlasinfo is not None:
-        roilutfile=atlasinfo['roilutfile']
-        lhannotfile=atlasinfo['lhannotfile']
-        rhannotfile=atlasinfo['rhannotfile']
-        annotsurfacename=atlasinfo['annotsurfacename']
-        lhannotprefix=atlasinfo['lhannotprefix']
-        rhannotprefix=atlasinfo['rhannotprefix']
+    if atlasname is not None and atlasinfo is None:
+        atlasinfo=retrieve_atlas_info(atlasname)
+    
+    if atlasinfo is None:
+        atlasinfo['roilutfile']=roilutfile
+        atlasinfo['lhannotfile']=lhannotfile
+        atlasinfo['rhannotfile']=rhannotfile
+        atlasinfo['annotsurfacename']=annotsurfacename
+        atlasinfo['lhannotprefix']=lhannotprefix
+        atlasinfo['rhannotprefix']=rhannotprefix
     
     #just to make things easier now that we are inside the function
     shading=not noshading
     
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=annotsurfacename)
-    
-    lhlabels,ctab,lhnames=nib.freesurfer.io.read_annot(lhannotfile)
-    lhnames=[(x.decode('UTF-8')) for x in lhnames]
-    if lhannotprefix is not None:
-        lhnames=['%s%s' % (lhannotprefix,x) for x in lhnames]
-
-    rhlabels,ctab,rhnames=nib.freesurfer.io.read_annot(rhannotfile)
-    rhnames=[(x.decode('UTF-8')) for x in rhnames]
-    if rhannotprefix is not None:
-        rhnames=['%s%s' % (rhannotprefix,x) for x in rhnames]
-
-    Troi=pd.read_table(roilutfile,delimiter='\s+',header=None,names=['label','name','R','G','B'])
-    Troi=Troi[Troi['name']!='Unknown']
-
-    lhannotval=np.zeros(Troi.shape[0])
-    rhannotval=np.zeros(Troi.shape[0])
-    for i,n86 in enumerate(Troi['name']):
-        lhidx=[j for j,nannot in enumerate(lhnames) if nannot==n86]
-        rhidx=[j for j,nannot in enumerate(rhnames) if nannot==n86]
-        if len(lhidx)==1:
-            lhannotval[i]=lhidx[0]
-        elif len(rhidx)==1:
-            rhannotval[i]=rhidx[0]
-    
-    Troi['lhannot']=lhannotval
-    Troi['rhannot']=rhannotval
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=atlasinfo['annotsurfacename'])
     
     view_azel_lh={'dorsal':[180,90],'lateral':[180,0], 'medial':[0,0], 'ventral':[0,-90]}
     view_azel_rh={'dorsal':[0,90],'lateral':[0,0], 'medial':[180,0], 'ventral':[180,-90]}
@@ -269,7 +297,7 @@ def save_montage_figure(roivals,atlasinfo=None,
     
     #rescale values (and clim) to [0,1000] so that plot_roi doesn't have issues with near-zero values
     zeroval=1e-8
-    roivals=roivals.flatten()[:Troi.shape[0]]
+    roivals=roivals.flatten()
     roivals[roivals==0]=zeroval
     #roivals_rescaled=roivals
     #clim_rescaled=clim
@@ -277,15 +305,7 @@ def save_montage_figure(roivals,atlasinfo=None,
     roivals_rescaled=np.clip(1000*((roivals-clim[0])/(clim[1]-clim[0])),zeroval,1000)
     clim_rescaled=[0,1000]
     
-    surfvalsLR={}
-    surfvalsLR['left']=np.zeros(lhlabels.shape)
-    surfvalsLR['right']=np.zeros(rhlabels.shape)
-    for i in range(Troi.shape[0]):
-        v=roivals_rescaled[i]
-        if Troi['lhannot'].iloc[i]>0:
-            surfvalsLR['left'][lhlabels==Troi['lhannot'].iloc[i]]=v
-        elif Troi['rhannot'].iloc[i]>0:
-            surfvalsLR['right'][rhlabels==Troi['rhannot'].iloc[i]]=v
+    surfvalsLR=roi2surf(roivals_rescaled,atlasinfo)
     
     for ih,h in enumerate(['left','right']):
         for iv, viewname in enumerate(viewnames):
@@ -401,8 +421,8 @@ def save_montage_figure(roivals,atlasinfo=None,
     
     return pixlist_stack
 
-def run_surfplot(argv):
-    args=parse_argument_surfplot(argv)
+def run_montageplot(argv):
+    args=parse_argument_montageplot(argv)
     
     inputfile=args.inputfile
     inputfieldname=args.inputfieldname
@@ -411,11 +431,15 @@ def run_surfplot(argv):
     surftype=args.surftype
     clim=flatarglist(args.clim)
     cmapname=args.cmapname
+    atlasname=args.atlasname
     roilutfile=args.roilutfile
     lhannotfile=args.lhannotfile
     rhannotfile=args.rhannotfile
     no_shading=args.noshading
     annotsurfacename=args.annotsurface
+    lhannotprefix=args.lhannotprefix
+    rhannotprefix=args.rhannotprefix
+    
     
     if len(clim)==2:
         clim=[np.float32(x) for x in clim]
@@ -449,12 +473,16 @@ def run_surfplot(argv):
     else:
         raise Exception("Invalid inputfile: %s" % (inputfile))
     
-    atlasname=args.atlasname.lower()
-    atlas_info=retrieve_atlas_info(atlasname)
+    if atlasname is not None:
+        atlasname=args.atlasname.lower()
+        atlas_info=retrieve_atlas_info(atlasname)
+    else:
+        atlasinfo={'atlasname':None,'roilutfile':roilutfile,'lhannotfile':lhannotfile,'rhannotfile':rhannotfile,
+            'annotsurfacename':annotsurfacename,'lhannotprefix':lhannotprefix,'rhannotprefix':rhannotprefix}
     
-    img=save_montage_figure(roivals,atlasinfo=atlas_info,
+    img=create_montage_figure(roivals,atlasinfo=atlas_info,
         viewnames=viewnames,surftype=surftype,clim=clim,colormap=cmapname,noshading=no_shading,
         outputimagefile=outputimage)
     
 if __name__ == "__main__":
-    run_surfplot(sys.argv[1:])
+    run_montageplot(sys.argv[1:])

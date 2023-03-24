@@ -18,13 +18,15 @@ python brainmontage.py
 --colormap CMAPNAME                colormap name from matplotlib colormaps
 --clim MIN MAX                     colormap value range
 [--noshading]                      don't apply surface lighting
-#atlas info option 1:
+# atlas info option 1:
 [--atlasname ATLASNAME]            atlas name for entry in atlas_info.json
-#atlas info option 2:
+# atlas info option 2:
 [--roilut ROILUTFILE]              if not providing atlasname, must provide roilut, lhannot, rhannot files
 [--lhannot LHANNOTFILE]
 [--rhannot RHANNOTFILE]
 [--annotsurfacename ANNOTSURFACE]  surface on which annot files are defined (default:fsaverage5)
+[--lhannotprefix LHANNOTPREFIX]    prefix to append to names in lhannot to match ROI LUT (eg: ctx-lh-)
+[--rhannotprefix RHANNOTPREFIX]         same for rhannot (eg: ctx-rh-)
 ```
 
 Example command-line usage:
@@ -35,13 +37,15 @@ python brainmontage.py --input mydata_fs86.mat --inputfield data --atlasname fs8
 Example python function usage:
 ```python
 import numpy as np
-from brainmontage import save_montage_figure, retrieve_atlas_info
-atlas_info=retrieve_atlas_info('fs86')
+from brainmontage import create_montage_figure
 
 roivals=np.arange(86) #example values for each ROI
 
-save_montage_figure(roivals,atlasinfo=atlas_info,
-    viewnames='all',surftype='infl',clim=[0,86],colormap='magma',
-    outputimagefile='mydata_montage.png')
+img=create_montage_figure(roivals,atlasname='fs86',
+    viewnames='all',surftype='infl',clim=[0,86],colormap='magma')
+
+from PIL import Image
+Image.fromarray(img).save('mydata_montage.png')
+#or you can add outputimagefile='mydata_montage.png' to create_montage_figure() to save directly
 ```
-![example inflated surface montage](mydata_montage.png) ![example folded surface montage](mydata_montage_whitesurf.png)
+<img src="mydata_montage.png" width=25%> <img src="mydata_montage_whitesurf.png" width=25%>
