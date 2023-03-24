@@ -44,4 +44,4 @@ save_montage_figure(roivals,atlasinfo=atlas_info,
     viewnames='all',surftype='infl',clim=[0,86],colormap='magma',
     outputimagefile='mydata_montage.png')
 ```
-![example output montage](mydata_montage.png)
+![example inflated surface montage](mydata_montage.png) ![example folded surface montage](mydata_montage_whitesurf.png)
