@@ -1,0 +1,11 @@
+{
+    "fs86": {
+        "roicount": 86,
+        "roilut": "%SCRIPTDIR%/atlases/fs86_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/fsaverage5.lh.aparc.annot",
+        "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.aparc.annot",
+        "annotsurface": "fsaverage5",
+        "lhannotprefix": "ctx-lh-",
+        "rhannotprefix": "ctx-rh-"
+    }
+}
