@@ -469,7 +469,7 @@ def run_montageplot(argv):
         elif inputfieldname in mkeys:
             roivals=Mroivals[inputfieldname]
         else:
-            raise Exception("Multiple data fields found in %s. Specify one with --inputfield")
+            raise Exception("Multiple data fields found in %s. Specify one with --inputfield:",mkeys)
     else:
         raise Exception("Invalid inputfile: %s" % (inputfile))
     
