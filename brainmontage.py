@@ -24,6 +24,7 @@ def parse_argument_montageplot(argv):
     parser.add_argument('--outputimage',action='store',dest='outputimage')
     parser.add_argument('--surftype',action='store',dest='surftype',default='infl')
     parser.add_argument('--cmap','--colormap',action='store',dest='cmapname',default='magma')
+    parser.add_argument('--cmapfile','--colormapfile',action='store',dest='cmapfile')
     parser.add_argument('--clim', action='append',dest='clim',nargs=2)
     parser.add_argument('--roilut',action='store',dest='roilutfile')
     parser.add_argument('--atlasname',action='store',dest='atlasname')
@@ -33,6 +34,7 @@ def parse_argument_montageplot(argv):
     parser.add_argument('--rhannotprefix',action='store',dest='rhannotprefix')
     parser.add_argument('--annotsurfacename',action='store',dest='annotsurface',default='fsaverage5')
     parser.add_argument('--noshading',action='store_true',dest='noshading')
+    parser.add_argument('--inputvals',action='append',dest='inputvals',nargs='*')
     
     return parser.parse_args(argv)
 
@@ -340,7 +342,8 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
                 
                 pixshading=pixshading[:,:,:3].astype(np.float32)/255.0
                 pixshading=np.mean(pixshading[:,:,:3],axis=2,keepdims=True)
-                pixshading=pixshading/pixshading.max()
+                #pixshading=pixshading/pixshading.max()
+                pixshading=np.clip(pixshading/pixshading[pixshading<1.0].max(),0,1)
             
             ##############################################
             #generate main ROI surface image (unshaded)
@@ -431,6 +434,7 @@ def run_montageplot(argv):
     surftype=args.surftype
     clim=flatarglist(args.clim)
     cmapname=args.cmapname
+    cmapfile=args.cmapfile
     atlasname=args.atlasname
     roilutfile=args.roilutfile
     lhannotfile=args.lhannotfile
@@ -440,6 +444,7 @@ def run_montageplot(argv):
     lhannotprefix=args.lhannotprefix
     rhannotprefix=args.rhannotprefix
     
+    inputvals_arg=flatarglist(args.inputvals)
     
     if len(clim)==2:
         clim=[np.float32(x) for x in clim]
@@ -448,16 +453,28 @@ def run_montageplot(argv):
     
     #nilearn uses 'Spectral' instead of matplotlib 'spectral'
     if cmapname.lower()=='spectral':
-        cmapname='Spectral'
+        cmap='Spectral'
     elif cmapname.lower()=='spectral_r':
-        cmapname='Spectral_r'
+        cmap='Spectral_r'
+    else:
+        cmap=cmapname
     
+    if cmapfile is not None:
+        cmapdata=np.loadtxt(cmapfile)
+        if cmapdata.shape[1]!=3:
+            raise Exception("colormap file must have 3 columns")
+        if cmapdata.max()>1:
+            cmapdata/=255
+        cmap=ListedColormap(cmapdata)
+        
     #roivals=np.arange(86)+1
     
     if inputfile is None:
         inputfile=""
     
-    if inputfile.lower().endswith(".txt"):
+    if len(inputvals_arg)>0:
+        roivals=np.array(inputvals_arg).astype(float)
+    elif inputfile.lower().endswith(".txt"):
         roivals=np.loadtxt(inputfile)
     elif inputfile.lower().endswith(".mat"):
         
@@ -480,8 +497,14 @@ def run_montageplot(argv):
         atlasinfo={'atlasname':None,'roilutfile':roilutfile,'lhannotfile':lhannotfile,'rhannotfile':rhannotfile,
             'annotsurfacename':annotsurfacename,'lhannotprefix':lhannotprefix,'rhannotprefix':rhannotprefix}
     
+    surftype_allowed=['white','infl','pial']
+    if not surftype in surftype_allowed:
+        surftype_found=[s for s in surftype_allowed if surftype.lower().startswith(s)]
+        if len(surftype_found)>0:
+            surftype=surftype_found[0]
+    
     img=create_montage_figure(roivals,atlasinfo=atlas_info,
-        viewnames=viewnames,surftype=surftype,clim=clim,colormap=cmapname,noshading=no_shading,
+        viewnames=viewnames,surftype=surftype,clim=clim,colormap=cmap,noshading=no_shading,
         outputimagefile=outputimage)
     
 if __name__ == "__main__":
