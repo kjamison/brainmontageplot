@@ -304,7 +304,11 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     #roivals_rescaled=roivals
     #clim_rescaled=clim
     
-    roivals_rescaled=np.clip(1000*((roivals-clim[0])/(clim[1]-clim[0])),zeroval,1000)
+    clim_denom=clim[1]-clim[0]
+    if clim_denom==0:
+        clim_denom=1
+        
+    roivals_rescaled=np.clip(1000*((roivals-clim[0])/clim_denom),zeroval,1000)
     clim_rescaled=[0,1000]
     
     surfvalsLR=roi2surf(roivals_rescaled,atlasinfo)
@@ -329,6 +333,10 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
                     shading_smooth_iters=10
                 shadingvals=mesh_shading(surfLR[h][0], surfLR[h][1], lightdir)
                 shadingvals,_=mesh_diffuse(vertvals=shadingvals,adjacency=diffuserLR_sparse[h],iters=shading_smooth_iters)
+                
+                #adjust computed shading values to look brighter
+                shadingvals=np.minimum(shadingvals**.5,.8)/.8;
+                
                 shadingvals=shadingvals/shadingvals.max()
                 
                 v=plotting.plot_surf_stat_map(fsaverage[surftype+'_'+h], stat_map=shadingvals,

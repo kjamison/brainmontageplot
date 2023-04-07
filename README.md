@@ -48,4 +48,4 @@ from PIL import Image
 Image.fromarray(img).save('mydata_montage.png')
 #or you can add outputimagefile='mydata_montage.png' to create_montage_figure() to save directly
 ```
-<img src="mydata_montage.png" width=25%> <img src="mydata_montage_whitesurf.png" width=25%>
+<img src="./mydata_montage.png" width=25%> <img src="./mydata_montage_whitesurf.png" width=25%>
