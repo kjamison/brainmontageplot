@@ -7,5 +7,12 @@
         "annotsurface": "fsaverage5",
         "lhannotprefix": "ctx-lh-",
         "rhannotprefix": "ctx-rh-"
+    },
+    "shen268": {
+        "roicount": 268,
+        "roilut": "%SCRIPTDIR%/atlases/shen268_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/fsaverage5.lh.shen268.shape.gii",
+        "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.shen268.shape.gii",
+        "annotsurface": "fsaverage5"
     }
 }

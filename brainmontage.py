@@ -175,28 +175,45 @@ def roi2surf(roivals,atlasinfo):
     if 'rhannotprefix' in atlasinfo:
         rhannotprefix=atlasinfo['rhannotprefix']
     
-    lhlabels,ctab,lhnames=nib.freesurfer.io.read_annot(lhannotfile)
-    lhnames=[(x.decode('UTF-8')) for x in lhnames]
-    if lhannotprefix is not None:
-        lhnames=['%s%s' % (lhannotprefix,x) for x in lhnames]
+    if lhannotfile.endswith("annot"):
+        #for .annot files, we neet the LUT that says which names to include and what order they go in
+        #read in the .annot data
+        Troi=pd.read_table(roilutfile,delimiter='\s+',header=None,names=['label','name','R','G','B'])
+        Troi=Troi[Troi['name']!='Unknown']
+    
+        lhlabels,ctab,lhnames=nib.freesurfer.io.read_annot(lhannotfile)
+        lhnames=[(x.decode('UTF-8')) for x in lhnames]
+        if lhannotprefix is not None:
+            lhnames=['%s%s' % (lhannotprefix,x) for x in lhnames]
 
-    rhlabels,ctab,rhnames=nib.freesurfer.io.read_annot(rhannotfile)
-    rhnames=[(x.decode('UTF-8')) for x in rhnames]
-    if rhannotprefix is not None:
-        rhnames=['%s%s' % (rhannotprefix,x) for x in rhnames]
+        rhlabels,ctab,rhnames=nib.freesurfer.io.read_annot(rhannotfile)
+        rhnames=[(x.decode('UTF-8')) for x in rhnames]
+        if rhannotprefix is not None:
+            rhnames=['%s%s' % (rhannotprefix,x) for x in rhnames]
 
-    Troi=pd.read_table(roilutfile,delimiter='\s+',header=None,names=['label','name','R','G','B'])
-    Troi=Troi[Troi['name']!='Unknown']
 
-    lhannotval=np.zeros(Troi.shape[0])
-    rhannotval=np.zeros(Troi.shape[0])
-    for i,n86 in enumerate(Troi['name']):
-        lhidx=[j for j,nannot in enumerate(lhnames) if nannot==n86]
-        rhidx=[j for j,nannot in enumerate(rhnames) if nannot==n86]
-        if len(lhidx)==1:
-            lhannotval[i]=lhidx[0]
-        elif len(rhidx)==1:
-            rhannotval[i]=rhidx[0]
+
+        lhannotval=np.zeros(Troi.shape[0])
+        rhannotval=np.zeros(Troi.shape[0])
+        for i,n86 in enumerate(Troi['name']):
+            lhidx=[j for j,nannot in enumerate(lhnames) if nannot==n86]
+            rhidx=[j for j,nannot in enumerate(rhnames) if nannot==n86]
+            if len(lhidx)==1:
+                lhannotval[i]=lhidx[0]
+            elif len(rhidx)==1:
+                rhannotval[i]=rhidx[0]
+    elif lhannotfile.endswith(".shape.gii"):
+        lhgii=nib.load(lhannotfile)
+        lhlabels=lhgii.agg_data()
+        
+        rhgii=nib.load(rhannotfile)
+        rhlabels=rhgii.agg_data()
+        
+        maxval=np.max([lhlabels]+[rhlabels])
+        lhannotval=np.arange(1,maxval+1)
+        rhannotval=np.arange(1,maxval+1)
+        
+        Troi=pd.DataFrame()
     
     Troi['lhannot']=lhannotval
     Troi['rhannot']=rhannotval
@@ -208,7 +225,7 @@ def roi2surf(roivals,atlasinfo):
         v=roivals[i]
         if Troi['lhannot'].iloc[i]>0:
             surfvalsLR['left'][lhlabels==Troi['lhannot'].iloc[i]]=v
-        elif Troi['rhannot'].iloc[i]>0:
+        if Troi['rhannot'].iloc[i]>0:
             surfvalsLR['right'][rhlabels==Troi['rhannot'].iloc[i]]=v
             
     return surfvalsLR
@@ -217,7 +234,7 @@ def retrieve_atlas_info(atlasname, atlasinfo_jsonfile=None, scriptdir=None):
     if scriptdir is None:
         scriptdir=os.path.realpath(os.path.dirname(__file__))
     if atlasinfo_jsonfile is None:
-        atlasinfo_jsonfile="%s/atlas_info.json" % (scriptdir)
+        atlasinfo_jsonfile="%s/atlases/atlas_info.json" % (scriptdir)
     
     lhannotprefix=None
     rhannotprefix=None

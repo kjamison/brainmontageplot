@@ -4,14 +4,16 @@ Generate brain surface ROI figures multiple viewpoints and combine them together
 
 Requirements: python3, nilearn (for main plotting functions), numpy, scipy, nibabel, PIL, pandas
 
-[atlas_info.json](atlas_info.json) contains information about the currently supported atlases to map ROIs to surface vertices.
-* fs86: FreeSurfer Desikan-Killiany 68 cortical gyri + 18 aseg subcortical. **Currently the only supported atlas**
+[atlas_info.json](atlases/atlas_info.json) contains information about the currently supported atlases to map ROIs to surface vertices.
+* fs86: FreeSurfer Desikan-Killiany 68 cortical gyri + 18 aseg subcortical.
+* shen268: 268-region cortical+subcortical atlas from [Shen 2013](https://pubmed.ncbi.nlm.nih.gov/23747961/)
 
 Usage:
 ```
 python brainmontage.py 
---input INPUTFILE                  file with value for each ROI. Can be .txt or .mat
+[--input INPUTFILE]                file with value for each ROI. Can be .txt or .mat
 [--inputfield INPUTFIELDNAME]      for .mat input with multiple variables, which variable name to use
+[--inputvals val1 val2 val3 ...]   provide values for each ROI directly from commmand line
 --views VIEWNAME VIEWNAME ...      choose from: dorsal, lateral, medial, ventral. default: all
 --outputimage OUTPUTIMAGE          image file to save final montage
 --surftype SURFTYPE                choose from: infl, white, pial. default: infl
