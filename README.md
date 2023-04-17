@@ -7,6 +7,8 @@ Requirements: python3, nilearn (for main plotting functions), numpy, scipy, niba
 [atlas_info.json](atlases/atlas_info.json) contains information about the currently supported atlases to map ROIs to surface vertices.
 * fs86: FreeSurfer Desikan-Killiany 68 cortical gyri + 18 aseg subcortical.
 * shen268: 268-region cortical+subcortical atlas from [Shen 2013](https://pubmed.ncbi.nlm.nih.gov/23747961/)
+* schaefer100(200,300,400): 100-400 region cortical atlas from [Schaefer 2018](https://pubmed.ncbi.nlm.nih.gov/28981612/). Uses 7Network order.
+* hcpmmp: 360 region cortical atlas from [Glasser 2016](https://pubmed.ncbi.nlm.nih.gov/27437579/)
 
 Usage:
 ```

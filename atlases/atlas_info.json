@@ -14,5 +14,40 @@
         "lhannot": "%SCRIPTDIR%/atlases/fsaverage5.lh.shen268.shape.gii",
         "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.shen268.shape.gii",
         "annotsurface": "fsaverage5"
+    },     
+    "schaefer100": {
+        "roicount": 100,
+        "roilut": "%SCRIPTDIR%/atlases/schaefer100_7Networks_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_100Parcels_7Networks_order.annot",
+        "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_100Parcels_7Networks_order.annot",
+        "annotsurface": "fsaverage5"
+    },     
+    "schaefer200": {
+        "roicount": 200,
+        "roilut": "%SCRIPTDIR%/atlases/schaefer200_7Networks_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_200Parcels_7Networks_order.annot",
+        "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_200Parcels_7Networks_order.annot",
+        "annotsurface": "fsaverage5"
+    },     
+    "schaefer300": {
+        "roicount": 300,
+        "roilut": "%SCRIPTDIR%/atlases/schaefer300_7Networks_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_300Parcels_7Networks_order.annot",
+        "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_300Parcels_7Networks_order.annot",
+        "annotsurface": "fsaverage5"
+    },     
+    "schaefer400": {
+        "roicount": 400,
+        "roilut": "%SCRIPTDIR%/atlases/schaefer400_7Networks_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_400Parcels_7Networks_order.annot",
+        "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_400Parcels_7Networks_order.annot",
+        "annotsurface": "fsaverage5"
+    },
+    "hcpmmp": {
+        "roicount": 360,
+        "roilut": "%SCRIPTDIR%/atlases/HCP_MMP1_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/fsaverage5.lh.HCP_MMP1.label.gii",
+        "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.HCP_MMP1.label.gii",
+        "annotsurface": "fsaverage5"
     }
 }

@@ -191,7 +191,7 @@ def roi2surf(roivals,atlasinfo):
         if rhannotprefix is not None:
             rhnames=['%s%s' % (rhannotprefix,x) for x in rhnames]
 
-
+        
 
         lhannotval=np.zeros(Troi.shape[0])
         rhannotval=np.zeros(Troi.shape[0])
@@ -202,7 +202,8 @@ def roi2surf(roivals,atlasinfo):
                 lhannotval[i]=lhidx[0]
             elif len(rhidx)==1:
                 rhannotval[i]=rhidx[0]
-    elif lhannotfile.endswith(".shape.gii"):
+        
+    elif lhannotfile.endswith(".shape.gii") or lhannotfile.endswith(".label.gii"):
         lhgii=nib.load(lhannotfile)
         lhlabels=lhgii.agg_data()
         
