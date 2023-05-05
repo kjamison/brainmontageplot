@@ -12,7 +12,7 @@ Requirements: python3, nilearn (for main plotting functions), numpy, scipy, niba
 
 Usage:
 ```
-python brainmontage.py 
+python -m brainmontage 
 [--input INPUTFILE]                file with value for each ROI. Can be .txt or .mat
 [--inputfield INPUTFIELDNAME]      for .mat input with multiple variables, which variable name to use
 [--inputvals val1 val2 val3 ...]   provide values for each ROI directly from commmand line
@@ -35,21 +35,20 @@ python brainmontage.py
 
 Example command-line usage:
 ```
-python brainmontage.py --input mydata_fs86.mat --inputfield data --atlasname fs86 --outputimage mydata_montage.png --colormap magma --clim -1 1
+python -m brainmontage --input mydata_fs86.mat --inputfield data --atlasname fs86 --outputimage mydata_montage.png --colormap magma --clim -1 1
 ```
 
 Example python function usage:
 ```python
 import numpy as np
-from brainmontage import create_montage_figure
+from brainmontage import create_montage_figure, save_image
 
 roivals=np.arange(86) #example values for each ROI
 
 img=create_montage_figure(roivals,atlasname='fs86',
     viewnames='all',surftype='infl',clim=[0,86],colormap='magma')
 
-from PIL import Image
-Image.fromarray(img).save('mydata_montage.png')
+save_image(img,'mydata_montage.png')
 #or you can add outputimagefile='mydata_montage.png' to create_montage_figure() to save directly
 ```
 <img src="mydata_montage.png" width=25%> <img src="mydata_montage_whitesurf.png" width=25%>
