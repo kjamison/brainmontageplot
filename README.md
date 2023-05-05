@@ -1,8 +1,8 @@
 # brainmontageplot
 
-Generate brain surface ROI figures multiple viewpoints and combine them together. Can be used from command line.
+Generate brain surface ROI figures with multiple viewpoints and combine them together. Can be used from command line.
 
-Requirements: python3, nilearn (for main plotting functions), numpy, scipy, nibabel, PIL, pandas
+Requirements: python3 (<3.11 for now!), nilearn (for main plotting functions), numpy, scipy, nibabel, PIL, pandas. See [requirements.txt](requirements.txt)
 
 [atlas_info.json](atlases/atlas_info.json) contains information about the currently supported atlases to map ROIs to surface vertices.
 * fs86: FreeSurfer Desikan-Killiany 68 cortical gyri + 18 aseg subcortical.
@@ -10,9 +10,16 @@ Requirements: python3, nilearn (for main plotting functions), numpy, scipy, niba
 * schaefer100(200,300,400): 100-400 region cortical atlas from [Schaefer 2018](https://pubmed.ncbi.nlm.nih.gov/28981612/). Uses 7Network order.
 * hcpmmp: 360 region cortical atlas from [Glasser 2016](https://pubmed.ncbi.nlm.nih.gov/27437579/)
 
+Installation:
+```
+git clone https://github.com/kjamison/brainmontageplot.git
+cd brainmontageplot
+pip install .
+```
+
 Usage:
 ```
-python -m brainmontage 
+brainmontage 
 [--input INPUTFILE]                file with value for each ROI. Can be .txt or .mat
 [--inputfield INPUTFIELDNAME]      for .mat input with multiple variables, which variable name to use
 [--inputvals val1 val2 val3 ...]   provide values for each ROI directly from commmand line
@@ -35,7 +42,7 @@ python -m brainmontage
 
 Example command-line usage:
 ```
-python -m brainmontage --input mydata_fs86.mat --inputfield data --atlasname fs86 --outputimage mydata_montage.png --colormap magma --clim -1 1
+brainmontage --input mydata_fs86.mat --inputfield data --atlasname fs86 --outputimage mydata_montage.png --colormap magma --clim -1 1
 ```
 
 Example python function usage:
