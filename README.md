@@ -10,12 +10,16 @@ Requirements: python3 (<3.11 for now!), nilearn (for main plotting functions), n
 * schaefer100(200,300,400): 100-400 region cortical atlas from [Schaefer 2018](https://pubmed.ncbi.nlm.nih.gov/28981612/). Uses 7Network order.
 * hcpmmp: 360 region cortical atlas from [Glasser 2016](https://pubmed.ncbi.nlm.nih.gov/27437579/)
 
+
+[![Try it on Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kjamison/brainmontageplot/blob/main/brainmontageplot_example.ipynb) (Note: rendering is much slower on colab than when running locally)
+
 Installation:
 ```
 git clone https://github.com/kjamison/brainmontageplot.git
 cd brainmontageplot
 pip install .
 ```
+
 
 Usage:
 ```
