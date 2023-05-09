@@ -15,9 +15,11 @@ import sys
 try:
     #need this for installed version
     from brainmontage.utils import *
+    from brainmontage._version import __version__
 except:
     #need this for source version
     from utils import *
+    from _version import __version__
 
 def parse_argument_montageplot(argv):
     parser=argparse.ArgumentParser(description='Save surface ROI and/or volume slice montage',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -56,9 +58,15 @@ def parse_argument_montageplot(argv):
     atlasopt_arg_group.add_argument('--rhannotprefix',action='store',dest='rhannotprefix')
     atlasopt_arg_group.add_argument('--annotsurfacename',action='store',dest='annotsurface',default='fsaverage5')
 
-
+    misc_arg_group=parser.add_argument_group('Other options')
+    misc_arg_group.add_argument('--version',action='store_true',dest='version')
 
     args=parser.parse_args(argv)
+
+    if args.version:
+        print(__version__)
+        exit(0)
+    
     return args
 
 def fill_surface_rois(roivals,atlasinfo):
