@@ -2,6 +2,8 @@
 
 Generate brain ROI figures with multiple surface viewpoints and/or volume slices and combine them together. Can be used from command line.
 
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kjamison/brainmontageplot/blob/main/brainmontageplot_example.ipynb) (Note: rendering is much faster on local install than colab)
+
 Requirements: python3 (<3.11 for now!), nilearn (for main plotting functions), numpy, scipy, nibabel, PIL, pandas. See [requirements.txt](requirements.txt)
 
 [atlas_info.json](brainmontage/atlases/atlas_info.json) contains information about the currently supported atlases to map ROIs to surface vertices.
@@ -9,9 +11,6 @@ Requirements: python3 (<3.11 for now!), nilearn (for main plotting functions), n
 * shen268: 268-region cortical+subcortical atlas from [Shen 2013](https://pubmed.ncbi.nlm.nih.gov/23747961/)
 * schaefer100(200,300,400): 100-400 region cortical atlas from [Schaefer 2018](https://pubmed.ncbi.nlm.nih.gov/28981612/). Uses 7Network order.
 * hcpmmp: 360 region cortical atlas from [Glasser 2016](https://pubmed.ncbi.nlm.nih.gov/27437579/)
-
-
-[![Try it on Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kjamison/brainmontageplot/blob/main/brainmontageplot_example.ipynb) (Note: rendering is much slower on colab than when running locally)
 
 Installation:
 ```
