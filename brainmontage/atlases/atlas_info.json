@@ -6,14 +6,16 @@
         "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.aparc.annot",
         "annotsurface": "fsaverage5",
         "lhannotprefix": "ctx-lh-",
-        "rhannotprefix": "ctx-rh-"
+        "rhannotprefix": "ctx-rh-",
+        "subcorticalvolume": "%SCRIPTDIR%/atlases/fs86_subcortical.nii.gz"
     },
     "shen268": {
         "roicount": 268,
         "roilut": "%SCRIPTDIR%/atlases/shen268_LUT.txt",
         "lhannot": "%SCRIPTDIR%/atlases/fsaverage5.lh.shen268.shape.gii",
         "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.shen268.shape.gii",
-        "annotsurface": "fsaverage5"
+        "annotsurface": "fsaverage5",
+        "subcorticalvolume": "%SCRIPTDIR%/atlases/shen268_subcortical.nii.gz"
     },     
     "schaefer100": {
         "roicount": 100,

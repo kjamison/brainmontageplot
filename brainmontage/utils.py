@@ -3,6 +3,8 @@ import numpy as np
 from PIL import Image
 from scipy import sparse
 import io
+import os
+from matplotlib import pyplot as plt
 
 def flatlist(l):
     if l is None:
@@ -13,6 +15,29 @@ def flatarglist(l):
     if l is None:
         return []
     return flatlist([x.split(",") for x in flatlist(l)])
+
+def stringfromlist(teststring,validstrings,allow_startswith=True):
+    is_str=False
+    if isinstance(teststring,str):
+        is_str=True
+        teststring=[teststring]
+    
+    for i,s in enumerate(teststring):
+        if allow_startswith:
+            s_found=[x for x in validstrings if x.lower().startswith(s.lower())]
+        else:
+            s_found=[x for x in validstrings if x.lower()==s.lower()]
+        
+        if len(s_found)==0:
+            raise Exception("Not found")
+        teststring[i]=s_found[0]
+    
+    if is_str:
+        teststring=teststring[0]
+    return teststring
+
+def getscriptdir():
+    return os.path.realpath(os.path.dirname(__file__))
 
 def cropbg(img,bgcolor=None):
     if bgcolor is None:
@@ -59,6 +84,55 @@ def padimage(img,bgcolor=None,padamount=None,padfinalsize=None):
     newimg[xstart:xstart+img.shape[0],ystart:ystart+img.shape[1],:]=img
     
     return newimg
+
+def val2rgb(v, cmap, clim=None):
+    if clim is None:
+        clim=[v.min(), v.max()]
+    if not np.isfinite(clim[0]):
+        clim[0]=v.min()
+    if not np.isfinite(clim[1]):
+        clim[1]=v.max()
+    
+    v=plt.Normalize(clim[0],clim[1])(v)
+    return cmap(v)
+
+    
+def vol2mosaic(V, sliceaxis=2, slice_indices=None, mosaic=None):
+    if len(slice_indices) == 0:
+        return None, None
+    
+    if sliceaxis == 0:
+        V=np.transpose(V,[1,2,0])
+    elif sliceaxis == 1:
+        V=np.transpose(V,[0,2,1])
+    elif sliceaxis == 2:
+        #slice already at end
+        pass
+    else:
+        raise Exception("Slice axis must be 0-2")
+
+    if slice_indices is None:
+        slice_indices=np.arange(V.shape[2])
+
+    V=V[:,:,slice_indices]
+    numslices=V.shape[2]
+
+    if mosaic is None or all([np.isnan(x) or x<0 for x in mosaic]):
+        mosaic=[np.floor(np.sqrt(numslices)), np.nan]
+    if np.isnan(mosaic[0]) or mosaic[0]<0:
+        mosaic[0]=np.ceil(numslices/mosaic[1])
+    elif np.isnan(mosaic[1]) or mosaic[1]<0:
+        mosaic[1]=np.ceil(numslices/mosaic[0])
+    mosaic=[int(x) for x in mosaic]
+    numslices_mosaic=mosaic[0]*mosaic[1]
+    if numslices_mosaic>numslices:
+        V_extra=np.zeros((V.shape[0],V.shape[1],numslices_mosaic-numslices))
+        V=np.concatenate((V,V_extra),axis=2)
+
+    Vmosaic=np.hstack([np.vstack([V[:,:,mosaic[1]*i+x] for x in range(mosaic[1])]) for i in range(mosaic[0])])
+
+    mosaic_info={"sliceaxis":sliceaxis,"slice_indices":slice_indices,"mosaic":mosaic}
+    return Vmosaic,mosaic_info
 
 def mesh_diffuse(verts=None,faces=None,adjacency=None,vertvals=None,iters=1):
 
@@ -131,4 +205,7 @@ def fig2pixels(fig,imgbuffer=None):
     return np.asarray(img)
 
 def save_image(imgdata,filename):
-    Image.fromarray(imgdata).save(filename)
+    if isinstance(imgdata,Image.Image):
+        imgdata.save(filename)
+    else:
+        Image.fromarray(imgdata).save(filename)
