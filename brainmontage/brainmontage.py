@@ -57,7 +57,8 @@ def parse_argument_montageplot(argv):
     atlasopt_arg_group.add_argument('--lhannotprefix',action='store',dest='lhannotprefix')
     atlasopt_arg_group.add_argument('--rhannotprefix',action='store',dest='rhannotprefix')
     atlasopt_arg_group.add_argument('--annotsurfacename',action='store',dest='annotsurface',default='fsaverage5')
-
+    atlasopt_arg_group.add_argument('--subcortvolume',action='store',dest='subcortvol')
+    
     misc_arg_group=parser.add_argument_group('Other options')
     misc_arg_group.add_argument('--version',action='store_true',dest='version')
 
@@ -137,7 +138,7 @@ def fill_surface_rois(roivals,atlasinfo):
     return surfvalsLR
 
 def fill_volume_rois(roivals, atlasinfo, backgroundval=0, referencevolume=None):
-    if not 'subcorticalvolume' in atlasinfo:
+    if not 'subcorticalvolume' in atlasinfo or atlasinfo['subcorticalvolume'] is None:
         raise Exception("Subcortical volume not found for atlas '%s'" % (atlasinfo["name"]))
     
     roilutfile=atlasinfo['roilutfile']
@@ -571,6 +572,8 @@ def run_montageplot(argv=None):
     annotsurfacename=args.annotsurface
     lhannotprefix=args.lhannotprefix
     rhannotprefix=args.rhannotprefix
+    subcortvolfile=args.subcortvol
+    
     upscale_factor=args.upscale
 
     slicearg=args.slices
@@ -667,8 +670,8 @@ def run_montageplot(argv=None):
         atlasname=args.atlasname.lower()
         atlas_info=retrieve_atlas_info(atlasname)
     else:
-        atlasinfo={'atlasname':None,'roilutfile':roilutfile,'lhannotfile':lhannotfile,'rhannotfile':rhannotfile,
-            'annotsurfacename':annotsurfacename,'lhannotprefix':lhannotprefix,'rhannotprefix':rhannotprefix}
+        atlas_info={'atlasname':None,'roilutfile':roilutfile,'lhannotfile':lhannotfile,'rhannotfile':rhannotfile,
+            'annotsurfacename':annotsurfacename,'lhannotprefix':lhannotprefix,'rhannotprefix':rhannotprefix,'subcorticalvolume':subcortvolfile}
     
     surftype_allowed=['white','infl','pial']
     if not surftype in surftype_allowed:
