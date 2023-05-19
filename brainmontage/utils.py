@@ -39,7 +39,7 @@ def stringfromlist(teststring,validstrings,allow_startswith=True):
 def getscriptdir():
     return os.path.realpath(os.path.dirname(__file__))
 
-def cropbg(img,bgcolor=None):
+def cropbg(img,bgcolor=None,return_bbox=True):
     if bgcolor is None:
         bgcolor=img[0,0,:]
     bgcolor=np.reshape(bgcolor,[1,1,img.shape[2]])
@@ -49,7 +49,10 @@ def cropbg(img,bgcolor=None):
     idx1=np.argwhere(np.any(bgmask,axis=0)).flatten()
     cropcoord=[idx0[0],idx0[-1]+1,idx1[0],idx1[-1]+1]
     newimg=img[cropcoord[0]:cropcoord[1],cropcoord[2]:cropcoord[3],:]
-    return newimg, cropcoord
+    if return_bbox:
+        return newimg, cropcoord
+    else:
+        return newimg
 
 def padimage(img,bgcolor=None,padamount=None,padfinalsize=None):
     if bgcolor is None:
