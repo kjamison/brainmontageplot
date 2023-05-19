@@ -56,7 +56,7 @@ brainmontage
 [--annotsurfacename ANNOTSURFACE]   surface on which annot files are defined (default:fsaverage5)
 [--lhannotprefix LHANNOTPREFIX]     prefix to append to names in lhannot to match ROI LUT (eg: ctx-lh-)
 [--rhannotprefix RHANNOTPREFIX]             same for rhannot (eg: ctx-rh-)
-
+[--subcortvolume SUBCORTVOL]        NIfTI volume with subcortical ROIs
 ```
 
 Example command-line usage: Surface views

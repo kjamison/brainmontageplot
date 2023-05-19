@@ -321,7 +321,7 @@ def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mos
     return rgbslice
 
 def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
-    roilutfile=None,lhannotfile=None,rhannotfile=None,annotsurfacename='fsaverage5',lhannotprefix=None, rhannotprefix=None,
+    roilutfile=None,lhannotfile=None,rhannotfile=None,annotsurfacename='fsaverage5',lhannotprefix=None, rhannotprefix=None, subcorticalvolume=None,
     viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=1, backgroundcolor="white",
     slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal',
     outputimagefile=None):
@@ -352,12 +352,14 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         atlasinfo=retrieve_atlas_info(atlasname)
     
     if atlasinfo is None:
+        atlasinfo={}
         atlasinfo['roilutfile']=roilutfile
         atlasinfo['lhannotfile']=lhannotfile
         atlasinfo['rhannotfile']=rhannotfile
         atlasinfo['annotsurfacename']=annotsurfacename
         atlasinfo['lhannotprefix']=lhannotprefix
         atlasinfo['rhannotprefix']=rhannotprefix
+        atlasinfo['subcorticalvolume']=subcorticalvolume
     
     #just to make things easier now that we are inside the function
     shading=not noshading
