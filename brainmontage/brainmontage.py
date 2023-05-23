@@ -426,7 +426,7 @@ def load_atlas_lookup(atlasname,surftype,shading=True):
     
     return lookup
 
-def save_atlas_lookup_file(atlasname, surftype='infl',viewnames='all',figsize=(6.4,6.4),figdpi=200, shading=True, only_shading=False, overwrite_existing=True):
+def save_atlas_lookup_file(atlasname=None, atlasinfo=None, surftype='infl',viewnames='all',figsize=(6.4,6.4),figdpi=200, shading=True, only_shading=False, overwrite_existing=True):
 
     if isinstance(viewnames,str):
         viewnames=[viewnames]
@@ -434,8 +434,11 @@ def save_atlas_lookup_file(atlasname, surftype='infl',viewnames='all',figsize=(6
     if 'all' in viewnames:
         viewnames=['dorsal','lateral','medial','ventral','anterior','posterior']
 
-    atlasinfo=retrieve_atlas_info(atlasname=atlasname)
+    if atlasname is not None and atlasinfo is None:
+        atlasinfo=retrieve_atlas_info(atlasname=atlasname)
     
+    atlasname=atlasinfo['atlasname']
+
     roicount=atlasinfo['roicount']
 
     lookup_surface_name=atlasinfo['lookupsurface']
