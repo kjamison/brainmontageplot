@@ -39,7 +39,24 @@ def stringfromlist(teststring,validstrings,allow_startswith=True):
 def getscriptdir():
     return os.path.realpath(os.path.dirname(__file__))
 
+def get_view_azel(hemi,viewname):
+    view_azel={}
+    view_azel['left']={'dorsal':[180,90],'lateral':[180,0], 'medial':[0,0], 'ventral':[0,-90],'anterior':[90,0],'posterior':[-90,0]}
+    view_azel['right']={'dorsal':[0,90],'lateral':[0,0], 'medial':[180,0], 'ventral':[180,-90],'anterior':[90,0],'posterior':[-90,0]}
+    return view_azel[hemi][viewname]
+
+def get_light_dir(hemi,viewname):
+    view_lightdir={}
+    view_lightdir['left']={'dorsal':[0,0,1],'lateral':[-1,0,0],'medial':[1,0,0],'ventral':[0,0,-1],'anterior':[0,1,0],'posterior':[0,-1,0]}
+    view_lightdir['right']={'dorsal':[0,0,1],'lateral':[1,0,0],'medial':[-1,0,0],'ventral':[0,0,-1],'anterior':[0,1,0],'posterior':[0,-1,0]}
+    return view_lightdir[hemi][viewname]
+
 def cropbg(img,bgcolor=None,return_bbox=True):
+    was_2d=False
+    if img.ndim == 2:
+        was_2d=True
+        img=np.stack([img]*3,axis=2)
+    
     if bgcolor is None:
         bgcolor=img[0,0,:]
     bgcolor=np.reshape(bgcolor,[1,1,img.shape[2]])
@@ -49,12 +66,28 @@ def cropbg(img,bgcolor=None,return_bbox=True):
     idx1=np.argwhere(np.any(bgmask,axis=0)).flatten()
     cropcoord=[idx0[0],idx0[-1]+1,idx1[0],idx1[-1]+1]
     newimg=img[cropcoord[0]:cropcoord[1],cropcoord[2]:cropcoord[3],:]
+    if was_2d:
+        newimg=newimg[:,:,0]
+    
     if return_bbox:
         return newimg, cropcoord
     else:
         return newimg
 
+def pad_to_max_height(imglist):
+    hmax=max([x.shape[0] for x in imglist])
+    return [padimage(x,bgcolor=None,padfinalsize=[hmax,-1]) for x in imglist]
+    
+def pad_to_max_width(imglist):
+    wmax=max([x.shape[1] for x in imglist])
+    return [padimage(x,bgcolor=None,padfinalsize=[-1,wmax]) for x in imglist]
+
 def padimage(img,bgcolor=None,padamount=None,padfinalsize=None):
+    was_2d=False
+    if img.ndim == 2:
+        was_2d=True
+        img=np.stack([img]*3,axis=2)
+    
     if bgcolor is None:
         bgcolor=img[0,0,:]
     bgcolor=np.reshape(bgcolor,[1,1,img.shape[2]])
@@ -85,6 +118,9 @@ def padimage(img,bgcolor=None,padamount=None,padfinalsize=None):
 
     newimg=np.repeat(np.repeat(bgcolor,finalsize[0],axis=0),finalsize[1],axis=1)
     newimg[xstart:xstart+img.shape[0],ystart:ystart+img.shape[1],:]=img
+    
+    if was_2d:
+        newimg=newimg[:,:,0]
     
     return newimg
 
@@ -165,7 +201,7 @@ def mesh_diffuse(verts=None,faces=None,adjacency=None,vertvals=None,iters=1):
         vertvals_new=A@vertvals_new
     return vertvals_new, A
 
-def mesh_shading(verts, faces, lightdirection):
+def mesh_shading(verts, faces, lightdirection, return_face_values=False):
     #compute face norms by cross product of v1->2 and v1->3
     v1=verts[faces[:,0],:]
     v2=verts[faces[:,1],:]
@@ -181,6 +217,9 @@ def mesh_shading(verts, faces, lightdirection):
     lightdir=lightdir/np.sqrt(np.sum(lightdir**2))
     facenormdot=np.dot(facenorm,lightdir)
     facenormdot=np.clip(facenormdot,0,1)
+    
+    if return_face_values:
+        return facenormdot
     
     #now map face norm to vertex
     #make a sparse [verts x faces] matrix so that each vertex ends up with a mean of all the faces that contain it 
@@ -198,11 +237,11 @@ def mesh_shading(verts, faces, lightdirection):
     
     return vertshading
 
-def fig2pixels(fig,imgbuffer=None):
+def fig2pixels(fig,imgbuffer=None,dpi=100):
     if imgbuffer is None:
         imgbuffer=io.BytesIO()
     imgbuffer.seek(0)
-    fig.savefig(imgbuffer,format='png',bbox_inches=0)
+    fig.savefig(imgbuffer,format='png',bbox_inches=0,dpi=dpi)
     imgbuffer.seek(0)
     img=Image.open(imgbuffer,'r')
     return np.asarray(img)
