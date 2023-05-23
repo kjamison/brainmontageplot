@@ -4,11 +4,14 @@ import numpy as np
 import nibabel as nib
 import nibabel.processing as nibproc
 import pandas as pd
+from tqdm import tqdm
 
 import json
-from scipy.io import loadmat
+from scipy.io import loadmat, savemat
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from datetime import datetime
 
 import argparse
 import sys
@@ -61,6 +64,8 @@ def parse_argument_montageplot(argv):
     
     misc_arg_group=parser.add_argument_group('Other options')
     misc_arg_group.add_argument('--version',action='store_true',dest='version')
+    misc_arg_group.add_argument('--nolookup',action='store_true',dest='no_lookup',help='Do not use saved lookups (mainly for testing)')
+    misc_arg_group.add_argument('--createlookup',action='store_true',dest='create_lookup',help='Create lookup if not found')
 
     args=parser.parse_args(argv)
 
@@ -81,19 +86,29 @@ def fill_surface_rois(roivals,atlasinfo):
     if 'rhannotprefix' in atlasinfo:
         rhannotprefix=atlasinfo['rhannotprefix']
     
-    if lhannotfile.endswith("annot"):
+    if lhannotfile.endswith(".annot") or lhannotfile.endswith(".label.gii"):
         #for .annot files, we neet the LUT that says which names to include and what order they go in
         #read in the .annot data
         Troi=pd.read_table(roilutfile,delimiter='\s+',header=None,names=['label','name','R','G','B'])
         Troi=Troi[Troi['name']!='Unknown']
     
-        lhlabels,ctab,lhnames=nib.freesurfer.io.read_annot(lhannotfile)
-        lhnames=[(x.decode('UTF-8')) for x in lhnames]
-        if lhannotprefix is not None:
-            lhnames=['%s%s' % (lhannotprefix,x) for x in lhnames]
+        if lhannotfile.endswith(".annot"):
+            lhlabels,ctab,lhnames=nib.freesurfer.io.read_annot(lhannotfile)
+            lhnames=[(x.decode('UTF-8')) for x in lhnames]
 
-        rhlabels,ctab,rhnames=nib.freesurfer.io.read_annot(rhannotfile)
-        rhnames=[(x.decode('UTF-8')) for x in rhnames]
+            rhlabels,ctab,rhnames=nib.freesurfer.io.read_annot(rhannotfile)
+            rhnames=[(x.decode('UTF-8')) for x in rhnames]
+        elif lhannotfile.endswith(".label.gii"):
+            lhgii=nib.load(lhannotfile)
+            lhlabels=lhgii.agg_data()
+            lhnames=[v for k,v in lhgii.labeltable.get_labels_as_dict().items()]
+
+            rhgii=nib.load(rhannotfile)
+            rhlabels=rhgii.agg_data()
+            rhnames=[v for k,v in rhgii.labeltable.get_labels_as_dict().items()]
+            
+        if lhannotprefix is not None:
+            lhnames=['%s%s' % (lhannotprefix,x) for x in lhnames]        
         if rhannotprefix is not None:
             rhnames=['%s%s' % (rhannotprefix,x) for x in rhnames]
 
@@ -109,7 +124,7 @@ def fill_surface_rois(roivals,atlasinfo):
             elif len(rhidx)==1:
                 rhannotval[i]=rhidx[0]
         
-    elif lhannotfile.endswith(".shape.gii") or lhannotfile.endswith(".label.gii"):
+    elif lhannotfile.endswith(".shape.gii"):
         lhgii=nib.load(lhannotfile)
         lhlabels=lhgii.agg_data()
         
@@ -138,7 +153,9 @@ def fill_surface_rois(roivals,atlasinfo):
     return surfvalsLR
 
 def fill_volume_rois(roivals, atlasinfo, backgroundval=0, referencevolume=None):
-    if not 'subcorticalvolume' in atlasinfo or atlasinfo['subcorticalvolume'] is None:
+    if not 'subcorticalvolume' in atlasinfo or \
+        atlasinfo['subcorticalvolume'] is None or \
+        atlasinfo['subcorticalvolume'] == "":
         raise Exception("Subcortical volume not found for atlas '%s'" % (atlasinfo["name"]))
     
     roilutfile=atlasinfo['roilutfile']
@@ -173,17 +190,27 @@ def retrieve_atlas_info(atlasname, atlasinfo_jsonfile=None, scriptdir=None):
     if atlasinfo_jsonfile is None:
         atlasinfo_jsonfile="%s/atlases/atlas_info.json" % (scriptdir)
     
-    lhannotprefix=None
-    rhannotprefix=None
-    subcortfile=None
+    roicount=None
+    lhannotprefix=""
+    rhannotprefix=""
+    subcortfile=""
+    lookupsurface=""
+    lhlookupannotfile=""
+    rhlookupannotfile=""
+    
     with open(atlasinfo_jsonfile,'r') as f:
         atlas_info_list=json.load(f)
     
+    if atlasname == 'list':
+        return list(atlas_info_list.keys())
+    
     if atlasname in atlas_info_list:
+        roicount=atlas_info_list[atlasname]['roicount']
         roilutfile=atlas_info_list[atlasname]['roilut'].replace('%SCRIPTDIR%',scriptdir)
         lhannotfile=atlas_info_list[atlasname]['lhannot'].replace('%SCRIPTDIR%',scriptdir)
         rhannotfile=atlas_info_list[atlasname]['rhannot'].replace('%SCRIPTDIR%',scriptdir)
-        
+        annotsurfacename=atlas_info_list[atlasname]['annotsurface']
+
         if 'lhannotprefix' in atlas_info_list[atlasname]:
             lhannotprefix=atlas_info_list[atlasname]['lhannotprefix']
         if 'rhannotprefix' in atlas_info_list[atlasname]:
@@ -192,15 +219,364 @@ def retrieve_atlas_info(atlasname, atlasinfo_jsonfile=None, scriptdir=None):
         if 'subcorticalvolume' in atlas_info_list[atlasname]:
             subcortfile=atlas_info_list[atlasname]['subcorticalvolume'].replace('%SCRIPTDIR%',scriptdir)
         
-        annotsurfacename=atlas_info_list[atlasname]['annotsurface']
+        #use the original annot info unless lookup-specific info is provided
+        lookupsurface=annotsurfacename
+        lhlookupannotfile=lhannotfile
+        rhlookupannotfile=rhannotfile
+
+        if "lookupsurface" in atlas_info_list[atlasname]:
+            lookupsurface=atlas_info_list[atlasname]['lookupsurface']
+        if "lhlookupannot" in atlas_info_list[atlasname]:
+            lhlookupannotfile=atlas_info_list[atlasname]['lhlookupannot'].replace('%SCRIPTDIR%',scriptdir)
+        if "rhlookupannot" in atlas_info_list[atlasname]:
+            rhlookupannotfile=atlas_info_list[atlasname]['rhlookupannot'].replace('%SCRIPTDIR%',scriptdir)
     else:
         raise Exception("atlas name '%s' not found. Choose from %s" % (atlasname, ",".join(atlas_info_list.keys())))
     
-    atlasinfo={'atlasname':atlasname,'roilutfile':roilutfile,'lhannotfile':lhannotfile,'rhannotfile':rhannotfile,
+    atlasinfo={'atlasname':atlasname,'roicount':roicount,'roilutfile':roilutfile,'lhannotfile':lhannotfile,'rhannotfile':rhannotfile,
         'annotsurfacename':annotsurfacename,'lhannotprefix':lhannotprefix,'rhannotprefix':rhannotprefix,
-        'subcorticalvolume':subcortfile}
+        'subcorticalvolume':subcortfile,'lhlookupannotfile':lhlookupannotfile,'rhlookupannotfile':rhlookupannotfile,'lookupsurface':lookupsurface}
     
     return atlasinfo
+
+def generate_surface_view_lookup(atlasinfo,surf,hemi=None,azel=None,figsize=None,figdpi=200,lightdir=None,shading_smooth_iters=1,surfbgvals=None):
+    
+    if figsize is None:
+        figsize=(6.4,6.4)
+
+    roicount=atlasinfo['roicount']
+    roivals=np.zeros(roicount)
+
+    ##############
+    # for each ROI, map to vertices, and then to faces, and then collapse into a FACES x 1 roi index vector
+    # which we then render and capture the result for the lookup
+
+    faces=surf[1]
+    #now map vertex values to faces (face=average)
+    #make a sparse [faces x verts] matrix so that each face ends up with a mean of all of its verts
+    spi=np.concatenate((faces[:,0],faces[:,1],faces[:,2]),axis=0)
+    spj=np.concatenate((np.arange(faces.shape[0]),np.arange(faces.shape[0]),np.arange(faces.shape[0])),axis=0)
+
+    T_vert2face=sparse.csr_matrix((np.ones(spj.shape),(spj,spi)))
+    T_vert2face[T_vert2face>1]=1 #avoid double links
+    sT=np.array(T_vert2face.sum(axis=1))[:,0]
+    sT[sT==0]=1
+    sT=sparse.csr_matrix((1/sT,(np.arange(sT.shape[0]),np.arange(sT.shape[0]))))
+    T_vert2face=sT@T_vert2face
+    
+    faceval_list=[]
+    for i in range(roicount):
+        roivals[:]=0
+        roivals[i]=1
+        surfvalsLR=fill_surface_rois(roivals,atlasinfo)
+        surfvals=surfvalsLR[hemi]
+
+        if not any(surfvals>0):
+            f=None
+            faceval_list+=[f]
+            continue
+
+        surfvals=mesh_diffuse(verts=surf[0],faces=surf[1],vertvals=surfvals,iters=1)[0]
+
+        f=T_vert2face @ surfvals
+
+        faceval_list+=[f]
+
+    faceval_shape=[f.shape for f in faceval_list if f is not None][0]
+    for i,f in enumerate(faceval_list):
+        if f is None:
+            faceval_list[i]=np.zeros(faceval_shape)
+
+    #add an extra blank for the NON-ROI brain
+    faceval_list=[np.zeros(faceval_shape)]+faceval_list
+
+    faceval_list=np.stack(faceval_list)
+    faceval_maxidx=np.argmax(faceval_list,axis=0)
+
+    #turn ROI index into an unique R,G,B triplet for rendering
+    roi_idx=np.arange(roicount+1) #use 1-based ROI here so we know 0=no ROI
+    rgbval_idx=np.stack((roi_idx % 256, roi_idx // 256 % 256, roi_idx // (256*256)),axis=-1)
+    cmap_faces=ListedColormap(rgbval_idx/255.0)
+
+    f_rgb=cmap_faces(faceval_maxidx/roi_idx.max())
+    ##############
+
+    surfvals=np.zeros(surf[0].shape[0]) #per vertex
+
+    colormap='gray'
+    clim=[0,1]
+
+    backgroundcolor=[0,0,0]
+    figure=plt.figure(figsize=figsize,facecolor=backgroundcolor)
+    v=plotting.plot_surf_roi(surf, roi_map=surfvals,
+                            bg_map=surfbgvals, bg_on_data=False,
+                            darkness=.5,cmap=colormap, colorbar=False, vmin=clim[0], vmax=clim[1],
+                            figure=figure)
+
+    hmesh=v.findobj(lambda obj: isinstance(obj, Poly3DCollection))[0]
+
+    v.get_axes()[-1].set_facecolor(backgroundcolor)
+    if azel is not None:
+        v.get_axes()[-1].view_init(azim=azel[0],elev=azel[1])
+
+    imgbgvals=None
+    if surfbgvals is not None:
+        imgbgvals=fig2pixels(figure,dpi=figdpi)
+        imgbgvals=imgbgvals[:,:,:3].astype(np.float32)/255.0
+
+
+    hmesh.set_facecolor(f_rgb)
+    img=fig2pixels(figure,dpi=figdpi)
+
+    #convert rgb triplets back to index
+    img= img[:,:,0] + img[:,:,1]*256 + img[:,:,2]*256*256
+    
+    imgnonzero=(img>0).astype(float)
+    imgmaxidx=img.astype(int)-1 #back to zero-based ROI now
+    imgmaxidx[imgmaxidx<0]=0
+    
+    #render a mask for the whole surface (white) on black bg
+    v.get_axes()[-1].set_facecolor([0,0,0])
+    hmesh.set_facecolor('white')
+    imgmask=fig2pixels(figure,dpi=figdpi)
+    imgmask=imgmask[:,:,:3].astype(np.float32)/255.0
+    imgmask=np.mean(imgmask,axis=2)
+
+    ############
+    #shading
+    imgshading=None
+    if lightdir is not None:
+        shadingvals=mesh_shading(surf[0], surf[1], lightdir)
+        shadingvals,_=mesh_diffuse(vertvals=shadingvals,verts=surf[0],faces=surf[1],iters=shading_smooth_iters)
+
+        #adjust computed shading values to look brighter
+        shadingvals=np.minimum(shadingvals**.5,.8)/.8
+
+        shadingvals=shadingvals/shadingvals.max()
+
+        f=T_vert2face @ shadingvals #convert back to faces for this operation
+
+        shading_cmap = plt.get_cmap("gray")
+        f_rgb=shading_cmap(f)
+
+        v.get_axes()[-1].set_facecolor('white')
+        hmesh.set_facecolor(f_rgb)
+        imgshading=fig2pixels(v,dpi=figdpi)
+
+        imgshading=imgshading[:,:,:3].astype(np.float32)/255.0
+        imgshading=np.mean(imgshading[:,:,:3],axis=2,keepdims=True)
+        #pixshading=pixshading/pixshading.max()
+        imgshading=np.clip(imgshading/imgshading[imgshading<1.0].max(),0,1)
+
+
+    ############
+    plt.close(figure)
+
+    imgmask,cropbox=cropbg(imgmask)
+    imgmaxidx=imgmaxidx[cropbox[0]:cropbox[1],cropbox[2]:cropbox[3]]
+    imgnonzero=imgnonzero[cropbox[0]:cropbox[1],cropbox[2]:cropbox[3]]
+    if imgshading is None:
+        imgshading=[]
+    else:
+        imgshading=imgshading[cropbox[0]:cropbox[1],cropbox[2]:cropbox[3],:]
+    if imgbgvals is None:
+        imgbgvals=[]
+    else:
+        imgbgvals=imgbgvals[cropbox[0]:cropbox[1],cropbox[2]:cropbox[3],:]
+
+    lookup={'roimap':imgmaxidx,'roinonzero':imgnonzero,'shading':imgshading,'mask':imgmask,'brainbackground':imgbgvals}
+    return lookup
+
+
+def load_atlas_lookup(atlasname,surftype,shading=True):
+    atlasinfo=retrieve_atlas_info(atlasname=atlasname)
+
+    lookup_surface_name=atlasinfo['lookupsurface']
+
+    lookup_dir="%s/lookups" % (getscriptdir())
+
+    shading_lookup_file="%s/shadinglookup_%s_%s.mat" % (lookup_dir,surftype,lookup_surface_name)
+    lookup_file="%s/roilookup_%s_%s_%s.mat" % (lookup_dir,atlasname,surftype,lookup_surface_name)
+
+    if not os.path.exists(lookup_file):
+        #raise Exception("Lookup not found: %s" % (lookup_file))
+        print("Lookup not found: %s" % (lookup_file))
+        return None
+    
+    lookup=loadmat(lookup_file,simplify_cells=True)
+    lookup['info']['atlasname']=atlasname
+
+    lookup_has_shading=all(['shading' in lookup[k] for k in lookup['views']])
+    if shading and not lookup_has_shading:
+        if not os.path.exists(shading_lookup_file):
+            #raise Exception("Shading lookup not found: %s" % (shading_lookup_file))
+            print("Shading lookup not found: %s" % (shading_lookup_file))
+            lookup=None
+        else:
+            shading_lookup=loadmat(shading_lookup_file,simplify_cells=True)
+            for v in lookup['views']:
+                if not lookup[v]['roimap'].shape[:2]==shading_lookup[v]['shading'].shape[:2]:
+                    print("Shading data in %s does not match ROI map image for %s:" % (shading_lookup_file,lookup_file))
+                    #use basic (slow) rendering instead
+                    lookup=None
+                    break
+                #copy shading and brainbackground (eg: sulc) images into lookup
+                lookup[v]['shading']=shading_lookup[v]['shading'].copy()
+                lookup[v]['brainbackground']=shading_lookup[v]['brainbackground'].copy()
+    
+    return lookup
+
+def save_atlas_lookup_file(atlasname, surftype='infl',viewnames='all',figsize=(6.4,6.4),figdpi=200, shading=True, only_shading=False, overwrite_existing=True):
+
+    if isinstance(viewnames,str):
+        viewnames=[viewnames]
+
+    if 'all' in viewnames:
+        viewnames=['dorsal','lateral','medial','ventral','anterior','posterior']
+
+    atlasinfo=retrieve_atlas_info(atlasname=atlasname)
+    
+    roicount=atlasinfo['roicount']
+
+    lookup_surface_name=atlasinfo['lookupsurface']
+    atlasinfo['lhannotfile']=atlasinfo['lhlookupannotfile']
+    atlasinfo['rhannotfile']=atlasinfo['rhlookupannotfile']
+    atlasinfo['annotsurfacename']=lookup_surface_name
+
+    lookup_dir="%s/lookups" % (getscriptdir())
+    if only_shading:
+        lookup_file="%s/shadinglookup_%s_%s.mat" % (lookup_dir,surftype,lookup_surface_name)
+    else:
+        lookup_file="%s/roilookup_%s_%s_%s.mat" % (lookup_dir,atlasname,surftype,lookup_surface_name)
+
+    if not os.path.exists(lookup_dir):
+        os.mkdir(lookup_dir)
+
+    if os.path.exists(lookup_file):
+        if overwrite_existing:
+            print("Lookup already exists. Overwriting: %s" % (lookup_file))
+        else:
+            print("Lookup already exists. Not overwriting: %s" % (lookup_file))
+            return lookup_file
+    
+
+    shading = shading or only_shading
+    #use larger values here for high-res fsaverage 
+    shading_smooth_iters=2
+    if surftype == 'infl':
+        shading_smooth_iters=20
+
+    fsaverage = datasets.fetch_surf_fsaverage(mesh=lookup_surface_name,data_dir=os.path.join(getscriptdir(),"nilearn_data"))
+    surfbgvalsLR={'left':fsaverage['sulc_left'],'right':fsaverage['sulc_right']}
+
+    surfLR={}
+    surfLR['left']=nib.load(fsaverage[surftype+'_'+'left']).agg_data()
+    surfLR['right']=nib.load(fsaverage[surftype+'_'+'right']).agg_data()
+
+    
+    lookup={}
+    lookup['info']={'atlasname':atlasname,'atlasinfo':atlasinfo,'dpi':figdpi,'figsize':figsize,
+                    'surftype':surftype,'timestamp':datetime.now().strftime("%Y%m%d_%H%M%S")}
+
+    if only_shading:
+        print("Generating shading-only lookup for %s %s" % (atlasname,surftype))
+    else:
+        print("Generating lookup for %s %s" % (atlasname,surftype))
+
+    progress= tqdm([(h,v) for h in ['left','right'] for v in viewnames])
+    viewkeys=[]
+
+    for h,viewname in progress:
+        if viewname == 'none':
+            continue
+        azel=get_view_azel(h,viewname)
+        lightdir=get_light_dir(h,viewname)
+
+        k="%s_%s" % (h,viewname)
+        viewkeys+=[k]
+        
+        surfbgvals=surfbgvalsLR[h]
+
+        if not shading:
+            surfbgvals=None
+            lightdir=None
+
+        progress.set_description("%s" % (k))
+
+        lookup[k] = generate_surface_view_lookup(atlasinfo,surfLR[h],hemi=h,surfbgvals=surfbgvals,azel=azel,lightdir=lightdir,
+                                    shading_smooth_iters=shading_smooth_iters,figsize=figsize,figdpi=figdpi)
+        
+    lookup['views']=np.array(viewkeys,dtype=object)
+
+    if shading and only_shading:
+        #deep copy shading info to new struct before deleting from roi lookup
+        lookup['info']['annotsurfacename']=lookup['info']['atlasinfo']['annotsurfacename']
+        del lookup['info']['atlasinfo']
+        del lookup['info']['atlasname']
+        for k in viewkeys:
+            del lookup[k]['roimap']
+            del lookup[k]['roinonzero']
+
+    if not shading:
+        for k in viewkeys:
+            del lookup[k]['shading']
+            del lookup[k]['brainbackground']
+
+    savemat(lookup_file,lookup,format='5',do_compression=True)
+    print("Saved %s" % (lookup_file))
+
+    return lookup_file
+
+def render_surface_lookup(roivals,lookup,cmap='magma',clim=None,backgroundcolor=None,shading=True,braincolor=None):
+    if backgroundcolor is None:
+        backgroundcolor=[0,0,0]
+
+    if clim is None:
+        clim=[np.nanmin(roivals),np.nanmax(roivals)]
+    
+    blank_cmap=ListedColormap(backgroundcolor)
+
+    roiimg=roivals[lookup['roimap']]
+    if isinstance(cmap,str):
+        cmap=plt.get_cmap(cmap)
+    
+    roiimg_rgb=cmap((roiimg-clim[0])/(clim[1]-clim[0]))
+    
+
+    if braincolor is None and 'brainbackground' in lookup:
+        brainbg_rgb=lookup['brainbackground']
+        if roiimg_rgb.shape[2]==4:
+            brainbg_rgb=np.concatenate((brainbg_rgb,roiimg_rgb[:,:,3][:,:,np.newaxis]),axis=2)
+    else:
+        if braincolor is None:
+            braincolor='gray'
+        brainbg_cmap=ListedColormap(braincolor)
+        brainbg_rgb=brainbg_cmap(np.ones(roiimg.shape))
+    
+    
+    imgnonzero=np.atleast_3d(lookup['roinonzero'])
+    
+    roiimg_rgb=roiimg_rgb*imgnonzero + brainbg_rgb*(1-imgnonzero)
+    
+    imgalpha=np.atleast_3d(lookup['mask'])
+
+    blank_rgb=blank_cmap(np.ones(roiimg.shape))
+    
+    newimg_rgb=roiimg_rgb*imgalpha + blank_rgb*(1-imgalpha)
+
+    
+    if shading and 'shading' in lookup:
+        imgshading=np.atleast_3d(lookup['shading'])
+        if newimg_rgb.shape[2]==4:
+            #dont apply shading to alpha channel
+            alphachan=newimg_rgb[:,:,3].copy()
+        newimg_rgb*=imgshading
+        if newimg_rgb.shape[2]==4:
+            newimg_rgb[:,:,3]=alphachan
+    
+    newimg_rgb=np.uint8(np.clip(np.round(newimg_rgb*255),0,255))
+
+    return newimg_rgb
 
 def render_surface_view(surfvals,surf,azel=None,surfbgvals=None,shading=True,lightdir=None,val_smooth_iters=0,shading_smooth_iters=1,
                         colormap=None, clim=None,
@@ -324,7 +700,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     roilutfile=None,lhannotfile=None,rhannotfile=None,annotsurfacename='fsaverage5',lhannotprefix=None, rhannotprefix=None, subcorticalvolume=None,
     viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=1, backgroundcolor="white",
     slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal',
-    outputimagefile=None):
+    outputimagefile=None, no_lookup=False, create_lookup=False):
     
     try:
         colormap=stringfromlist(colormap,list(plt.colormaps.keys()),allow_startswith=False)
@@ -339,20 +715,21 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         viewnames=[viewnames]
             
     if viewnames is None or len(viewnames)==0:
-        viewnames=['dorsal','lateral','medial','ventral']
+        viewnames=['dorsal','lateral','medial','ventral','anterior','posterior']
     elif "all" in [v.lower() for v in viewnames]:
-        viewnames=['dorsal','lateral','medial','ventral']
+        viewnames=['dorsal','lateral','medial','ventral','anterior','posterior']
     
     try:
-        viewnames=stringfromlist(viewnames,['none','dorsal','lateral','medial','ventral'])
+        viewnames=stringfromlist(viewnames,['none','dorsal','lateral','medial','ventral','anterior','posterior'])
     except:
-        raise Exception("Viewname must be one of: none, dorsal, lateral, medial, ventral")
+        raise Exception("Viewname must be one of: none, dorsal, lateral, medial, ventral, anterior, posterior")
 
     if atlasname is not None and atlasinfo is None:
         atlasinfo=retrieve_atlas_info(atlasname)
     
     if atlasinfo is None:
         atlasinfo={}
+        atlasname['atlasname']=None
         atlasinfo['roilutfile']=roilutfile
         atlasinfo['lhannotfile']=lhannotfile
         atlasinfo['rhannotfile']=rhannotfile
@@ -360,7 +737,9 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         atlasinfo['lhannotprefix']=lhannotprefix
         atlasinfo['rhannotprefix']=rhannotprefix
         atlasinfo['subcorticalvolume']=subcorticalvolume
-    
+
+    atlasname=atlasinfo['atlasname']
+
     #just to make things easier now that we are inside the function
     shading=not noshading
     
@@ -373,28 +752,11 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     try:
         slicestack_order=stringfromlist(slicestack_order,['axial','coronal','sagittal'])
     except:
-        raise Exception("Slicestack order options must be on of: axial, coronal, sagittal")
+        if slicestack_order is None:
+            slicestack_order=['axial','coronal','sagittal']
+        else:
+            raise Exception("Slicestack order options must be one of: axial, coronal, sagittal")
     
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=atlasinfo['annotsurfacename'])
-    
-    view_azel_lh={'dorsal':[180,90],'lateral':[180,0], 'medial':[0,0], 'ventral':[0,-90]}
-    view_azel_rh={'dorsal':[0,90],'lateral':[0,0], 'medial':[180,0], 'ventral':[180,-90]}
-    view_lightdir_lh={'dorsal':[0,0,1],'lateral':[-1,0,0],'medial':[1,0,0],'ventral':[0,0,-1]}
-    view_lightdir_rh={'dorsal':[0,0,1],'lateral':[1,0,0],'medial':[-1,0,0],'ventral':[0,0,-1]}
-    
-    pixlist=[]
-    pixlist_hemi=[]
-
-    surfLR={}
-
-    shading_smooth_iters=1
-    if surftype == 'infl':
-        shading_smooth_iters=10
-    
-    surfLR['left']=nib.load(fsaverage[surftype+'_'+'left']).agg_data()
-    surfLR['right']=nib.load(fsaverage[surftype+'_'+'right']).agg_data()
-
-    surfbgvalsLR={'left':fsaverage['sulc_left'],'right':fsaverage['sulc_right']}
 
     #rescale values (and clim) to [0,1000] so that plot_roi doesn't have issues with near-zero values
     zeroval=1e-8
@@ -410,51 +772,120 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     roivals_rescaled=np.clip(1000*((roivals-clim[0])/clim_denom),zeroval,1000)
     clim_rescaled=[0,1000]
     
-    surfvalsLR=fill_surface_rois(roivals_rescaled,atlasinfo)
+    if no_lookup:
+        lookup_dict=None
+    else:
+        lookup_dict=load_atlas_lookup(atlasname=atlasname,surftype=surftype)
+        if lookup_dict is None and create_lookup:
+            print("Creating lookup for %s %s (this may take up to 10 minutes the first time...)" % (atlasname,surftype))
+            lookup_file=save_atlas_lookup_file(atlasname=atlasname,surftype=surftype,viewnames='all',shading=False)
+            shading_lookup_file=save_atlas_lookup_file(atlasname=atlasname,surftype=surftype,viewnames='all',shading=True,only_shading=True,overwrite_existing=False)
+            lookup_dict=load_atlas_lookup(atlasname=atlasname,surftype=surftype)
 
-    fig=plt.figure(figsize=(6.4,6.4),facecolor=backgroundcolor)
-    figsize=fig.get_size_inches()
-    figsize=[x*upscale_factor for x in figsize]
-    fig.set_size_inches(figsize)
+    fig=None
+    pixlist=[]
+    pixlist_hemi=[]
+    pixlist_view=[]
 
-    for ih,h in enumerate(['left','right']):
-        for iv, viewname in enumerate(viewnames):
-            if viewname == 'none':
-                continue
-            azel=None
-            if h=='left':
-                azel=view_azel_lh[viewname]
-                lightdir=view_lightdir_lh[viewname]
-            else:
-                azel=view_azel_rh[viewname]
-                lightdir=view_lightdir_rh[viewname]
-            
-            pix=render_surface_view(surfvals=surfvalsLR[h],surf=surfLR[h],surfbgvals=surfbgvalsLR[h],
-                                    azel=azel,lightdir=lightdir,shading=shading,shading_smooth_iters=shading_smooth_iters,
-                                    colormap=colormap, clim=clim_rescaled,
-                                    figure=fig)
+    if lookup_dict is not None:
 
-            pix=padimage(pix,bgcolor=None,padamount=1)
+        for ih,h in enumerate(['left','right']):
+            for iv,viewname in enumerate(viewnames):
+                if viewname == 'none':
+                    continue
 
-            pixlist+=[pix]
-            pixlist_hemi+=[h]
+                viewkey="%s_%s" % (h,viewname)
+                pix=render_surface_lookup(roivals_rescaled,lookup_dict[viewkey],cmap=colormap,clim=clim_rescaled,
+                                          backgroundcolor=backgroundcolor,shading=shading,braincolor=None)
+
+                pix=padimage(pix,bgcolor=None,padamount=1)
+
+                if upscale_factor != 1:
+                    newsize=[np.round(x*upscale_factor).astype(int) for x in pix.shape[:2]]
+                    newsize=[newsize[1],newsize[0]]
+                    pix=np.asarray(Image.fromarray(pix).resize(newsize,resample=Image.Resampling.LANCZOS))
+                    
+                pixlist+=[pix]
+                pixlist_hemi+=[h]
+                pixlist_view+=[viewname]
+    else:
+        fsaverage = datasets.fetch_surf_fsaverage(mesh=atlasinfo['annotsurfacename'],data_dir=os.path.join(getscriptdir(),"nilearn_data"))
+        
+        surfLR={}
+
+        shading_smooth_iters=1
+        if surftype == 'infl':
+            shading_smooth_iters=10
+        
+        surfLR['left']=nib.load(fsaverage[surftype+'_'+'left']).agg_data()
+        surfLR['right']=nib.load(fsaverage[surftype+'_'+'right']).agg_data()
+
+        surfbgvalsLR={'left':fsaverage['sulc_left'],'right':fsaverage['sulc_right']}
+        
+        surfvalsLR=fill_surface_rois(roivals_rescaled,atlasinfo)
+
+        fig=plt.figure(figsize=(6.4,6.4),facecolor=backgroundcolor)
+        figsize=fig.get_size_inches()
+        figsize=[x*upscale_factor for x in figsize]
+        fig.set_size_inches(figsize)
+
+        for ih,h in enumerate(['left','right']):
+            for iv, viewname in enumerate(viewnames):
+                if viewname == 'none':
+                    continue
+                azel=get_view_azel(h,viewname)
+                lightdir=get_light_dir(h,viewname)
+                
+                pix=render_surface_view(surfvals=surfvalsLR[h],surf=surfLR[h],surfbgvals=surfbgvalsLR[h],
+                                        azel=azel,lightdir=lightdir,shading=shading,shading_smooth_iters=shading_smooth_iters,
+                                        colormap=colormap, clim=clim_rescaled,
+                                        figure=fig)
+
+                pix=padimage(pix,bgcolor=None,padamount=1)
+
+                pixlist+=[pix]
+                pixlist_hemi+=[h]
+                pixlist_view+=[viewname]
     
     #pad all surface views to the same width
     if len(pixlist)>0:
-        wmax=max([x.shape[1] for x in pixlist])
-        pixlist=[padimage(x,bgcolor=None,padfinalsize=[-1,wmax]) for x in pixlist]
+        
+        if "anterior" in pixlist_view and "posterior" in pixlist_view and "left" in pixlist_hemi and "right" in pixlist_hemi:
+            #special case for left+right anterior+posterior
+            idx_left_ant=[i for i,x in enumerate(pixlist) if pixlist_hemi[i]+pixlist_view[i]=='leftanterior']
+            idx_right_ant=[i for i,x in enumerate(pixlist) if pixlist_hemi[i]+pixlist_view[i]=='rightanterior']
+            idx_left_post=[i for i,x in enumerate(pixlist) if pixlist_hemi[i]+pixlist_view[i]=='leftposterior']
+            idx_right_post=[i for i,x in enumerate(pixlist) if pixlist_hemi[i]+pixlist_view[i]=='rightposterior']
+            if all([len(x)==1 for x in [idx_left_ant,idx_right_ant,idx_left_post,idx_right_post]]):
+                [pix_left_ant,pix_right_ant,pix_left_post,pix_right_post]=pad_to_max_height([
+                    pixlist[idx_left_ant[0]],
+                    pixlist[idx_right_ant[0]],
+                    pixlist[idx_left_post[0]],
+                    pixlist[idx_right_post[0]]
+                    ])
+                pix_ant=np.hstack((pix_right_ant,pix_left_ant))
+                pix_post=np.hstack((pix_left_post,pix_right_post))
+                #make the "left" = both L+R anterior, and the "right" = both L+R posterior
+                pixlist[idx_left_ant[0]]=pix_ant
+                pixlist[idx_right_ant[0]]=pix_post
+                #set hemi to blank for the remaining entries so they are left out of pixlist_left/right below
+                pixlist_hemi[idx_left_post[0]]=[]
+                pixlist_hemi[idx_right_post[0]]=[]
+                
+
+        #wmax=max([x.shape[1] for x in pixlist])
+        #pixlist=[padimage(x,bgcolor=None,padfinalsize=[-1,wmax]) for x in pixlist]
+        pixlist=pad_to_max_width(pixlist)
         
         pixlist_left=[x for i,x in enumerate(pixlist) if pixlist_hemi[i]=='left']
         pixlist_right=[x for i,x in enumerate(pixlist) if pixlist_hemi[i]=='right']
+
+        whichview=[x for i,x in enumerate(pixlist_view) if pixlist_hemi[i]=='left']
         
         #pad matching L/R pairs to the same height
-        lhshape=[x.shape for x in pixlist_left]
-        rhshape=[x.shape for x in pixlist_right]
         
-        for i in range(len(lhshape)):
-                hmax=max(lhshape[i][0],rhshape[i][0])
-                pixlist_left[i]=padimage(pixlist_left[i],bgcolor=None,padfinalsize=[hmax,-1])
-                pixlist_right[i]=padimage(pixlist_right[i],bgcolor=None,padfinalsize=[hmax,-1])
+        for i in range(len(pixlist_left)):
+            pixlist_left[i],pixlist_right[i]=pad_to_max_height([pixlist_left[i],pixlist_right[i]])
         
         pixlist_stack=np.hstack((np.vstack(pixlist_left),np.vstack(pixlist_right)))
     else:
@@ -549,7 +980,8 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         save_image(pixlist_stack,outputimagefile)
         print("Saved %s" % (outputimagefile))
     
-    plt.close(fig)
+    if fig is not None:
+        plt.close(fig)
 
     return pixlist_stack
 
@@ -577,6 +1009,8 @@ def run_montageplot(argv=None):
     subcortvolfile=args.subcortvol
     
     upscale_factor=args.upscale
+    no_lookup=args.no_lookup
+    create_lookup=args.create_lookup
 
     slicearg=args.slices
     stackdirection=args.stackdirection
@@ -685,7 +1119,7 @@ def run_montageplot(argv=None):
         viewnames=viewnames,surftype=surftype,clim=clim,colormap=cmap,noshading=no_shading,
         outputimagefile=outputimage,upscale_factor=upscale_factor,slicestack_direction=stackdirection,
         slice_dict=slicedict,mosaic_dict=slicemosaic_dict,slicestack_order=slicedict_order,
-        backgroundcolor=bgcolor)
+        backgroundcolor=bgcolor,no_lookup=no_lookup,create_lookup=create_lookup)
 
 if __name__ == "__main__":
     run_montageplot(sys.argv[1:])
