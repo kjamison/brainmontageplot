@@ -20,7 +20,7 @@ setuptools.setup(
     url="https://github.com/kjamison/brainmontageplot",
     packages=setuptools.find_packages(),
     install_requires = required,
-    package_data={'brainmontage':['atlases/*']},
+    package_data={'brainmontage':['atlases/*','lookup_inputs/*','lookups/*']},
     include_package_data = True,
     entry_points = {'console_scripts':['brainmontage=brainmontage.brainmontage:run_montageplot']},
     classifiers= [
