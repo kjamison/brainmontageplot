@@ -8,8 +8,8 @@
         "lhannotprefix": "ctx-lh-",
         "rhannotprefix": "ctx-rh-",
         "subcorticalvolume": "%SCRIPTDIR%/atlases/fs86_subcortical.nii.gz",
-        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.aparc.label.gii",
-        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.aparc.label.gii",
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.aparc.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.aparc.label.gii",
         "annotsurface_lookup": "fsaverage"
     },
     "shen268": {
@@ -19,8 +19,8 @@
         "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.shen268.shape.gii",
         "annotsurface": "fsaverage5",
         "subcorticalvolume": "%SCRIPTDIR%/atlases/shen268_subcortical.nii.gz",
-        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.shen268.shape.gii",
-        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.shen268.shape.gii",        
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.shen268.shape.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.shen268.shape.gii",        
         "annotsurface_lookup": "fsaverage"
     },
     "schaefer100": {
@@ -29,8 +29,8 @@
         "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_100Parcels_7Networks_order.annot",
         "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_100Parcels_7Networks_order.annot",
         "annotsurface": "fsaverage5",
-        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.Schaefer2018_100Parcels_7Networks_order.label.gii",
-        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.Schaefer2018_100Parcels_7Networks_order.label.gii",
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.Schaefer2018_100Parcels_7Networks_order.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.Schaefer2018_100Parcels_7Networks_order.label.gii",
         "annotsurface_lookup": "fsaverage"
     },     
     "schaefer200": {
@@ -39,8 +39,8 @@
         "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_200Parcels_7Networks_order.annot",
         "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_200Parcels_7Networks_order.annot",
         "annotsurface": "fsaverage5",
-        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.Schaefer2018_200Parcels_7Networks_order.label.gii",
-        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.Schaefer2018_200Parcels_7Networks_order.label.gii",
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.Schaefer2018_200Parcels_7Networks_order.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.Schaefer2018_200Parcels_7Networks_order.label.gii",
         "annotsurface_lookup": "fsaverage"
     },     
     "schaefer300": {
@@ -49,8 +49,8 @@
         "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_300Parcels_7Networks_order.annot",
         "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_300Parcels_7Networks_order.annot",
         "annotsurface": "fsaverage5",
-        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.Schaefer2018_300Parcels_7Networks_order.label.gii",
-        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.Schaefer2018_300Parcels_7Networks_order.label.gii",
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.Schaefer2018_300Parcels_7Networks_order.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.Schaefer2018_300Parcels_7Networks_order.label.gii",
         "annotsurface_lookup": "fsaverage"
     },     
     "schaefer400": {
@@ -59,8 +59,8 @@
         "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_400Parcels_7Networks_order.annot",
         "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_400Parcels_7Networks_order.annot",
         "annotsurface": "fsaverage5",
-        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.Schaefer2018_400Parcels_7Networks_order.label.gii",
-        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.Schaefer2018_400Parcels_7Networks_order.label.gii",
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.Schaefer2018_400Parcels_7Networks_order.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.Schaefer2018_400Parcels_7Networks_order.label.gii",
         "annotsurface_lookup": "fsaverage"
     },
     "hcpmmp": {
@@ -69,8 +69,8 @@
         "lhannot": "%SCRIPTDIR%/atlases/fsaverage5.lh.HCP_MMP1.label.gii",
         "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.HCP_MMP1.label.gii",
         "annotsurface": "fsaverage5",
-        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.HCP_MMP1.label.gii",
-        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.HCP_MMP1.label.gii",
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.HCP_MMP1.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.HCP_MMP1.label.gii",
         "annotsurface_lookup": "fsaverage"
     }
 }
