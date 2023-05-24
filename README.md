@@ -2,7 +2,7 @@
 
 Generate brain ROI figures with multiple surface viewpoints and/or volume slices and combine them together. Can be used from command line.
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kjamison/brainmontageplot/blob/main/brainmontageplot_example.ipynb) (Note: rendering is much faster on local install than colab)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kjamison/brainmontageplot/blob/main/brainmontageplot_example.ipynb) (Note: non-lookup rendering is much faster on local install than colab)
 
 Requirements: python3 (<3.11 for now!), nilearn (for main plotting functions), numpy, scipy, nibabel, PIL, pandas. See [requirements.txt](requirements.txt)
 

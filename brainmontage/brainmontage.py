@@ -962,9 +962,11 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         imgslice=Image.fromarray(imgslice)
 
         if current_image_size is None:
+            slice_only_scale_factor=4 #.25 is too small for slice-only mode so make it bigger
+            
             current_image_size=imgslice.size
             #if no surface views, apply upscale factor to volume slices directly
-            current_image_size=[int(round(x*upscale_factor)) for x in current_image_size]
+            current_image_size=[int(round(x*upscale_factor*slice_only_scale_factor)) for x in current_image_size]
 
         if slicestack_direction.lower()=='horizontal':
             imgscale=current_image_size[0]/imgslice.size[0]
