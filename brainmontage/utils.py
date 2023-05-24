@@ -201,6 +201,46 @@ def mesh_diffuse(verts=None,faces=None,adjacency=None,vertvals=None,iters=1):
         vertvals_new=A@vertvals_new
     return vertvals_new, A
 
+def vert2face(surf=None,faces=None, vertvals=None):
+    if faces is None and surf is not None:
+        faces=surf[1]
+    #now map vertex values to faces (face=average)
+    #make a sparse [faces x verts] matrix so that each face ends up with a mean of all of its verts
+    spi=np.concatenate((faces[:,0],faces[:,1],faces[:,2]),axis=0)
+    spj=np.concatenate((np.arange(faces.shape[0]),np.arange(faces.shape[0]),np.arange(faces.shape[0])),axis=0)
+
+    T_vert2face=sparse.csr_matrix((np.ones(spj.shape),(spj,spi)))
+    T_vert2face[T_vert2face>1]=1 #avoid double links
+    sT=np.array(T_vert2face.sum(axis=1))[:,0]
+    sT[sT==0]=1
+    sT=sparse.csr_matrix((1/sT,(np.arange(sT.shape[0]),np.arange(sT.shape[0]))))
+    T_vert2face=sT@T_vert2face
+
+    if vertvals is None:
+        return T_vert2face
+    else:
+        return T_vert2face @ vertvals
+    
+def face2vert(surf=None,faces=None, facevals=None):
+    if faces is None and surf is not None:
+        faces=surf[1]
+    #now map face norm to vertex
+    #make a sparse [verts x faces] matrix so that each vertex ends up with a mean of all the faces that contain it 
+    spi=np.concatenate((faces[:,0],faces[:,1],faces[:,2]),axis=0)
+    spj=np.concatenate((np.arange(faces.shape[0]),np.arange(faces.shape[0]),np.arange(faces.shape[0])),axis=0)
+    
+    T_face2vert=sparse.csr_matrix((np.ones(spi.shape),(spi,spj)))
+    T_face2vert[T_face2vert>1]=1 #avoid double links
+    sT=np.array(T_face2vert.sum(axis=1))[:,0]
+    sT[sT==0]=1
+    sT=sparse.csr_matrix((1/sT,(np.arange(sT.shape[0]),np.arange(sT.shape[0]))))
+    T_face2vert=sT@T_face2vert
+
+    if facevals is None:
+        return T_face2vert
+    else:
+        return T_face2vert @ facevals
+
 def mesh_shading(verts, faces, lightdirection, return_face_values=False):
     #compute face norms by cross product of v1->2 and v1->3
     v1=verts[faces[:,0],:]
@@ -222,18 +262,7 @@ def mesh_shading(verts, faces, lightdirection, return_face_values=False):
         return facenormdot
     
     #now map face norm to vertex
-    #make a sparse [verts x faces] matrix so that each vertex ends up with a mean of all the faces that contain it 
-    spi=np.concatenate((faces[:,0],faces[:,1],faces[:,2]),axis=0)
-    spj=np.concatenate((np.arange(faces.shape[0]),np.arange(faces.shape[0]),np.arange(faces.shape[0])),axis=0)
-    
-    T_face2vert=sparse.csr_matrix((np.ones(spi.shape),(spi,spj)))
-    T_face2vert[T_face2vert>1]=1 #avoid double links
-    sT=np.array(T_face2vert.sum(axis=1))[:,0]
-    sT[sT==0]=1
-    sT=sparse.csr_matrix((1/sT,(np.arange(sT.shape[0]),np.arange(sT.shape[0]))))
-    T_face2vert=sT@T_face2vert
-    
-    vertshading=T_face2vert@facenormdot
+    vertshading=face2vert(faces=faces,facevals=facenormdot)
     
     return vertshading
 

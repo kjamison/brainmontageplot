@@ -8,9 +8,9 @@
         "lhannotprefix": "ctx-lh-",
         "rhannotprefix": "ctx-rh-",
         "subcorticalvolume": "%SCRIPTDIR%/atlases/fs86_subcortical.nii.gz",
-        "lhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.aparc.label.gii",
-        "rhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.aparc.label.gii",
-        "lookupsurface": "fsaverage"
+        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.aparc.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.aparc.label.gii",
+        "annotsurface_lookup": "fsaverage"
     },
     "shen268": {
         "roicount": 268,
@@ -19,9 +19,9 @@
         "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.shen268.shape.gii",
         "annotsurface": "fsaverage5",
         "subcorticalvolume": "%SCRIPTDIR%/atlases/shen268_subcortical.nii.gz",
-        "lhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.shen268.shape.gii",
-        "rhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.shen268.shape.gii",        
-        "lookupsurface": "fsaverage"
+        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.shen268.shape.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.shen268.shape.gii",        
+        "annotsurface_lookup": "fsaverage"
     },
     "schaefer100": {
         "roicount": 100,
@@ -29,9 +29,9 @@
         "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_100Parcels_7Networks_order.annot",
         "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_100Parcels_7Networks_order.annot",
         "annotsurface": "fsaverage5",
-        "lhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.Schaefer2018_100Parcels_7Networks_order.label.gii",
-        "rhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.Schaefer2018_100Parcels_7Networks_order.label.gii",
-        "lookupsurface": "fsaverage"
+        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.Schaefer2018_100Parcels_7Networks_order.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.Schaefer2018_100Parcels_7Networks_order.label.gii",
+        "annotsurface_lookup": "fsaverage"
     },     
     "schaefer200": {
         "roicount": 200,
@@ -39,9 +39,9 @@
         "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_200Parcels_7Networks_order.annot",
         "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_200Parcels_7Networks_order.annot",
         "annotsurface": "fsaverage5",
-        "lhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.Schaefer2018_200Parcels_7Networks_order.label.gii",
-        "rhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.Schaefer2018_200Parcels_7Networks_order.label.gii",
-        "lookupsurface": "fsaverage"
+        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.Schaefer2018_200Parcels_7Networks_order.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.Schaefer2018_200Parcels_7Networks_order.label.gii",
+        "annotsurface_lookup": "fsaverage"
     },     
     "schaefer300": {
         "roicount": 300,
@@ -49,9 +49,9 @@
         "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_300Parcels_7Networks_order.annot",
         "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_300Parcels_7Networks_order.annot",
         "annotsurface": "fsaverage5",
-        "lhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.Schaefer2018_300Parcels_7Networks_order.label.gii",
-        "rhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.Schaefer2018_300Parcels_7Networks_order.label.gii",
-        "lookupsurface": "fsaverage"
+        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.Schaefer2018_300Parcels_7Networks_order.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.Schaefer2018_300Parcels_7Networks_order.label.gii",
+        "annotsurface_lookup": "fsaverage"
     },     
     "schaefer400": {
         "roicount": 400,
@@ -59,9 +59,9 @@
         "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_400Parcels_7Networks_order.annot",
         "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_400Parcels_7Networks_order.annot",
         "annotsurface": "fsaverage5",
-        "lhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.Schaefer2018_400Parcels_7Networks_order.label.gii",
-        "rhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.Schaefer2018_400Parcels_7Networks_order.label.gii",
-        "lookupsurface": "fsaverage"
+        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.Schaefer2018_400Parcels_7Networks_order.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.Schaefer2018_400Parcels_7Networks_order.label.gii",
+        "annotsurface_lookup": "fsaverage"
     },
     "hcpmmp": {
         "roicount": 360,
@@ -69,8 +69,8 @@
         "lhannot": "%SCRIPTDIR%/atlases/fsaverage5.lh.HCP_MMP1.label.gii",
         "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.HCP_MMP1.label.gii",
         "annotsurface": "fsaverage5",
-        "lhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.HCP_MMP1.label.gii",
-        "rhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.HCP_MMP1.label.gii",
-        "lookupsurface": "fsaverage"
+        "lhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.HCP_MMP1.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.HCP_MMP1.label.gii",
+        "annotsurface_lookup": "fsaverage"
     }
 }
