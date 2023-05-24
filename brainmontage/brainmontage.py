@@ -37,7 +37,7 @@ def parse_argument_montageplot(argv):
     parser.add_argument('--cmapfile','--colormapfile',action='store',dest='cmapfile')
     parser.add_argument('--clim', action='append',dest='clim',nargs=2)
     parser.add_argument('--noshading',action='store_true',dest='noshading')
-    parser.add_argument('--upscale',action='store',dest='upscale',type=float,default=.25,help='Image upscaling factor')
+    parser.add_argument('--upscale',action='store',dest='upscale',type=float,default=1,help='Image upscaling factor')
     parser.add_argument('--backgroundcolor','--bgcolor',action='store',dest='bgcolorname',default='white',help='Background color name')
     parser.add_argument('--backgroundrgb','--bgrgb',action='store',dest='bgrgb',type=float,nargs=3,help='Background color R G B (0-1.0)')
 
@@ -714,10 +714,16 @@ def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mos
 
 def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     roilutfile=None,lhannotfile=None,rhannotfile=None,annotsurfacename='fsaverage5',lhannotprefix=None, rhannotprefix=None, subcorticalvolume=None,
-    viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=.25, backgroundcolor="white",
+    viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=1, backgroundcolor="white",
     slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal',
     outputimagefile=None, no_lookup=False, create_lookup=False):
-    
+
+    #default factor=1 is way too big in general, so for surface views scale this down by 25%
+    surface_scale_factor=upscale_factor*.25
+    #for slice views with surface, we just scale to match surface view
+    #but for slice-only, use the upscale_factor argument (as-is, scale=1 is fine for slice-only)
+    slice_only_scale_factor=upscale_factor
+
     try:
         colormap=stringfromlist(colormap,list(plt.colormaps.keys()),allow_startswith=False)
     except:
@@ -816,8 +822,8 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
 
                 pix=padimage(pix,bgcolor=None,padamount=1)
 
-                if upscale_factor != 1:
-                    newsize=[np.round(x*upscale_factor).astype(int) for x in pix.shape[:2]]
+                if surface_scale_factor != 1:
+                    newsize=[np.round(x*surface_scale_factor).astype(int) for x in pix.shape[:2]]
                     newsize=[newsize[1],newsize[0]]
                     pix=np.asarray(Image.fromarray(pix).resize(newsize,resample=Image.Resampling.LANCZOS))
                     
@@ -842,7 +848,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
 
         fig=plt.figure(figsize=(6.4,6.4),facecolor=backgroundcolor)
         figsize=fig.get_size_inches()
-        figsize=[x*upscale_factor for x in figsize]
+        figsize=[x*surface_scale_factor for x in figsize]
         fig.set_size_inches(figsize)
 
         for ih,h in enumerate(['left','right']):
@@ -960,13 +966,12 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     for imgslice in imgslice_list:
         imgslice=np.uint8(np.clip(np.round(imgslice.astype(np.float32)*255),0,255))
         imgslice=Image.fromarray(imgslice)
-
+        
         if current_image_size is None:
-            slice_only_scale_factor=4 #.25 is too small for slice-only mode so make it bigger
-            
+
             current_image_size=imgslice.size
             #if no surface views, apply upscale factor to volume slices directly
-            current_image_size=[int(round(x*upscale_factor*slice_only_scale_factor)) for x in current_image_size]
+            current_image_size=[int(round(x*slice_only_scale_factor)) for x in current_image_size]
 
         if slicestack_direction.lower()=='horizontal':
             imgscale=current_image_size[0]/imgslice.size[0]
