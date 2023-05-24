@@ -19,10 +19,10 @@
         "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.shen268.shape.gii",
         "annotsurface": "fsaverage5",
         "subcorticalvolume": "%SCRIPTDIR%/atlases/shen268_subcortical.nii.gz",
-        "lhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage6.lh.shen268.shape.gii",
-        "rhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage6.rh.shen268.shape.gii",        
-        "lookupsurface": "fsaverage6"
-    },     
+        "lhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.lh.shen268.shape.gii",
+        "rhlookupannot": "%SCRIPTDIR%/lookup_inputs/fsaverage.rh.shen268.shape.gii",        
+        "lookupsurface": "fsaverage"
+    },
     "schaefer100": {
         "roicount": 100,
         "roilut": "%SCRIPTDIR%/atlases/schaefer100_7Networks_LUT.txt",
