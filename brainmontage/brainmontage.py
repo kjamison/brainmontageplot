@@ -13,6 +13,9 @@ from matplotlib.colors import ListedColormap
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from datetime import datetime
 
+from matplotlib import use as matplotlib_set_backend
+from matplotlib import get_backend as matplotlib_get_backend
+
 import argparse
 import sys
 try:
@@ -306,12 +309,19 @@ def generate_surface_view_lookup(atlasinfo,surf,hemi=None,azel=None,figsize=None
     colormap='gray'
     clim=[0,1]
 
+    #explicitly set backend to ensure dpi/rendering consistent across installations
+    current_backend=matplotlib_get_backend()
+    matplotlib_set_backend('Agg')
+
     backgroundcolor=[0,0,0]
-    figure=plt.figure(figsize=figsize,facecolor=backgroundcolor)
+    figure=plt.figure(figsize=figsize,facecolor=backgroundcolor,dpi=figdpi)
     v=plotting.plot_surf_roi(surf, roi_map=surfvals,
                             bg_map=surfbgvals, bg_on_data=False,
                             darkness=.5,cmap=colormap, colorbar=False, vmin=clim[0], vmax=clim[1],
                             figure=figure)
+
+    #also explicitly set xyz aspect to ensure consistent render scale across installations
+    v.get_axes()[-1].set_box_aspect([1,1,.75])
 
     hmesh=v.findobj(lambda obj: isinstance(obj, Poly3DCollection))[0]
 
@@ -371,6 +381,9 @@ def generate_surface_view_lookup(atlasinfo,surf,hemi=None,azel=None,figsize=None
 
     ############
     plt.close(figure)
+
+    #restore previous backend
+    matplotlib_set_backend(current_backend)
 
     imgmask,cropbox=cropbg(imgmask)
     imgmaxidx=imgmaxidx[cropbox[0]:cropbox[1],cropbox[2]:cropbox[3]]
