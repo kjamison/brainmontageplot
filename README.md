@@ -31,7 +31,7 @@ brainmontage
 --surftype SURFTYPE                 choose from: infl, white, pial. default: infl
 --colormap CMAPNAME                 colormap name from matplotlib colormaps
 --clim MIN MAX                      colormap value range
---upscale SCALE                     higher value to render images at higher resolution (default=0.25)
+--upscale SCALE                     higher value to render images at higher resolution (default=1)
 --backgroundcolor COLORNAME         color name for background (default: white)
 [--backgroundrgb R G B]               or specify background as R G B triplet (values 0-1.0)
 [--noshading]                       don't apply surface lighting
@@ -61,12 +61,14 @@ brainmontage
 
 Example command-line usage: Surface views
 ```
-brainmontage --input examples/mydata_fs86.mat --inputfield data --atlasname fs86 --outputimage mydata_montage.png --colormap magma --clim -1 1
+brainmontage --input examples/mydata_fs86.mat --inputfield data --atlasname fs86 --colormap magma --clim -1 1 \
+    --outputimage mydata_montage.png
 ```
 
 Example command-line usage: Surface views with column of axial slices
 ```
-brainmontage --input examples/mydata_fs86.mat --inputfield data --atlasname fs86 --outputimage mydata_montage_withslices.png --colormap magma --clim -1 1 --slices ax 23 33 43 53 --axmosaic -1 1
+brainmontage --input examples/mydata_fs86.mat --inputfield data --atlasname fs86 --colormap magma --clim -1 1 \
+    --slices ax 23 33 43 53 --axmosaic -1 1 --outputimage mydata_montage_withslices.png 
 ```
 
 Example python function usage:
@@ -89,11 +91,11 @@ img_with_slices=create_montage_figure(roivals,atlasname='fs86',
     upscale_factor=2, backgroundcolor="black",
     outputimagefile='mydata_montage_withslices.png')
 
-#Or an image with axial, coronal, and sagittal slices only, resized by .5, and a light gray background
+#Or an image with axial, coronal, and sagittal slices only, and a light gray background
 img_slices=create_montage_figure(roivals,atlasname='fs86',
     viewnames='none',clim=[0,86],colormap='rainbow',
     slice_dict={'axial':range(0,180,20),'coronal':range(20,200,20),'sagittal':range(10,180,20)},
-    upscale_factor=.5, backgroundcolor="lightgray",
+    backgroundcolor="lightgray",
     outputimagefile='mydata_montage_onlyslices.png')
 ```
 <img src="examples/mydata_montage.png" width=25%> <img src="examples/mydata_montage_whitesurf.png" width=25%> <img src="examples/mydata_montage_withslices.png" width=25%> <img src="examples/mydata_montage_onlyslices.png" width=25%>
