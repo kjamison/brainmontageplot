@@ -37,7 +37,7 @@ def parse_argument_montageplot(argv):
     parser.add_argument('--cmapfile','--colormapfile',action='store',dest='cmapfile')
     parser.add_argument('--clim', action='append',dest='clim',nargs=2)
     parser.add_argument('--noshading',action='store_true',dest='noshading')
-    parser.add_argument('--upscale',action='store',dest='upscale',type=float,default=1,help='Image upscaling factor')
+    parser.add_argument('--upscale',action='store',dest='upscale',type=float,default=.25,help='Image upscaling factor')
     parser.add_argument('--backgroundcolor','--bgcolor',action='store',dest='bgcolorname',default='white',help='Background color name')
     parser.add_argument('--backgroundrgb','--bgrgb',action='store',dest='bgrgb',type=float,nargs=3,help='Background color R G B (0-1.0)')
 
@@ -714,7 +714,7 @@ def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mos
 
 def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     roilutfile=None,lhannotfile=None,rhannotfile=None,annotsurfacename='fsaverage5',lhannotprefix=None, rhannotprefix=None, subcorticalvolume=None,
-    viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=1, backgroundcolor="white",
+    viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=.25, backgroundcolor="white",
     slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal',
     outputimagefile=None, no_lookup=False, create_lookup=False):
     

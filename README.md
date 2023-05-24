@@ -31,7 +31,7 @@ brainmontage
 --surftype SURFTYPE                 choose from: infl, white, pial. default: infl
 --colormap CMAPNAME                 colormap name from matplotlib colormaps
 --clim MIN MAX                      colormap value range
---upscale SCALE                     scalar to render images at higher resolution 
+--upscale SCALE                     higher value to render images at higher resolution (default=0.25)
 --backgroundcolor COLORNAME         color name for background (default: white)
 [--backgroundrgb R G B]               or specify background as R G B triplet (values 0-1.0)
 [--noshading]                       don't apply surface lighting
