@@ -61,14 +61,15 @@ brainmontage
 
 Example command-line usage: Surface views
 ```
-brainmontage --input examples/mydata_fs86.mat --inputfield data --atlasname fs86 --colormap magma --clim -1 1 \
-    --outputimage mydata_montage.png
+brainmontage --input examples/mydata_fs86.mat --inputfield data --atlasname fs86 \
+    --colormap magma --clim -1 1 --outputimage mydata_montage.png
 ```
 
 Example command-line usage: Surface views with column of axial slices
 ```
-brainmontage --input examples/mydata_fs86.mat --inputfield data --atlasname fs86 --colormap magma --clim -1 1 \
-    --slices ax 23 33 43 53 --axmosaic -1 1 --outputimage mydata_montage_withslices.png 
+brainmontage --input examples/mydata_fs86.mat --inputfield data --atlasname fs86 \
+    --colormap magma --clim -1 1 --slices ax 23 33 43 53 --axmosaic -1 1 \
+    --outputimage mydata_montage_withslices.png 
 ```
 
 Example python function usage:
@@ -84,7 +85,8 @@ img=create_montage_figure(roivals,atlasname='fs86',
 save_image(img,'mydata_montage.png')
 #or you can add outputimagefile='mydata_montage.png' to create_montage_figure() to save directly
 
-#create an image with surface views, upscaled by 2, a vertical row of axial slices, with black background
+#create an image with surface views, upscaled by 2, a vertical row of axial slices, 
+# with black background
 img_with_slices=create_montage_figure(roivals,atlasname='fs86',
     viewnames='all',surftype='infl',clim=[0,86],colormap='magma',
     slice_dict={'axial':[23,33,43,53]},mosaic_dict={'axial':[-1,1]},
