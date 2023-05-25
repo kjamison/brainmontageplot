@@ -996,7 +996,8 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     slicevol_cmap=None
     bgvol_cmap=None
     blank_cmap=ListedColormap(backgroundcolor)
-
+    slice_background_alpha=np.clip(slice_background_alpha,0,1)
+    
     if slice_dict:
         refnib=nib.load(bgvolfile)
         masknib=nib.load(bgmaskfile)
