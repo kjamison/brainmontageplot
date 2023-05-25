@@ -11,6 +11,7 @@ Requirements: python3 (<3.11 for now!), nilearn (for main plotting functions), n
 * shen268: 268-region cortical+subcortical atlas from [Shen 2013](https://pubmed.ncbi.nlm.nih.gov/23747961/)
 * schaefer100(200,300,400): 100-400 region cortical atlas from [Schaefer 2018](https://pubmed.ncbi.nlm.nih.gov/28981612/). Uses 7Network order.
 * hcpmmp: 360 region cortical atlas from [Glasser 2016](https://pubmed.ncbi.nlm.nih.gov/27437579/)
+* coco439: 81 subcortical regions + 360 region cortical atlas from [Glasser 2016](https://pubmed.ncbi.nlm.nih.gov/27437579/)
 
 Installation:
 ```
@@ -37,6 +38,12 @@ brainmontage
 [--noshading]                       don't apply surface lighting
 --facemode                          face color mode: mode (default), mean, best (slower)
 --bestmodeiters                     For "best" facemode, how many selection smoothing iterations (default=5)
+
+#color bar options
+--colorbar                          Add colorbar to output image
+--colorbarcolor                     Colorbar tick+label color. Can change to "white" for dark backgrounds
+--colorbarfontsize                  Font size for colorbar label values
+--colorbarlocation                   right (default), left, top, bottom
 
 #optional volume slices
 --slices <ax,cor,sag> <slice idx>   List of slice axes names followed by and indices
@@ -95,11 +102,18 @@ img_with_slices=create_montage_figure(roivals,atlasname='fs86',
     upscale_factor=2, backgroundcolor="black", face_mode="best",
     outputimagefile='mydata_montage_withslices.png')
 
+#create an image with surface views, upscaled by 2, with a colorbar
+img_with_slices=create_montage_figure(roivals,atlasname='fs86',
+    viewnames='all',surftype='infl',clim=[0,86],colormap='magma',
+    upscale_factor=2, face_mode="best", add_colorbar=True,
+    outputimagefile='mydata_montage_withcolorbar.png')
+
 #Or an image with axial, coronal, and sagittal slices only, and a light gray background
 img_slices=create_montage_figure(roivals,atlasname='fs86',
     viewnames='none',clim=[0,86],colormap='rainbow',
     slice_dict={'axial':range(0,180,20),'coronal':range(20,200,20),'sagittal':range(10,180,20)},
     backgroundcolor="lightgray",
     outputimagefile='mydata_montage_onlyslices.png')
+
 ```
-<img src="examples/mydata_montage.png" width=25%> <img src="examples/mydata_montage_whitesurf.png" width=25%> <img src="examples/mydata_montage_withslices.png" width=25%> <img src="examples/mydata_montage_onlyslices.png" width=25%>
+<img src="examples/mydata_montage.png" width=25%> <img src="examples/mydata_montage_whitesurf.png" width=25%> <img src="examples/mydata_montage_withslices.png" width=25%> <img src="examples/mydata_montage_withcolorbar.png" width=25%> <img src="examples/mydata_montage_onlyslices.png" width=25%>
