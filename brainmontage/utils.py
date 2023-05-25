@@ -18,6 +18,7 @@ def flatarglist(l):
 
 def stringfromlist(teststring,validstrings,allow_startswith=True):
     is_str=False
+    
     if isinstance(teststring,str):
         is_str=True
         teststring=[teststring]
@@ -173,8 +174,11 @@ def vol2mosaic(V, sliceaxis=2, slice_indices=None, mosaic=None):
     mosaic_info={"sliceaxis":sliceaxis,"slice_indices":slice_indices,"mosaic":mosaic}
     return Vmosaic,mosaic_info
 
-def mesh_diffuse(verts=None,faces=None,adjacency=None,vertvals=None,iters=1):
-
+def mesh_diffuse(verts=None,faces=None,surf=None,adjacency=None,vertvals=None,iters=1):
+    if verts is None and faces is None and surf is not None:
+        verts=surf[0]
+        faces=surf[1]
+    
     if adjacency is not None:
         A=adjacency
     elif faces is not None:
