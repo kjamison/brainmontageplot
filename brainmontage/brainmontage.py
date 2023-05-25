@@ -97,7 +97,7 @@ def fill_surface_rois(roivals,atlasinfo):
     if lhannotfile.endswith(".annot") or lhannotfile.endswith(".label.gii"):
         #for .annot files, we neet the LUT that says which names to include and what order they go in
         #read in the .annot data
-        Troi=pd.read_table(roilutfile,delimiter='\s+',header=None,names=['label','name','R','G','B'])
+        Troi=pd.read_table(roilutfile,delimiter='\s+',header=None,names=['label','name','R','G','B','A'])
         Troi=Troi[Troi['name']!='Unknown']
     
         if lhannotfile.endswith(".annot"):
@@ -115,13 +115,13 @@ def fill_surface_rois(roivals,atlasinfo):
             lhdict=lhgii.labeltable.get_labels_as_dict()
             lhnames=[v for k,v in lhdict.items()]
             lhvals=[k for k,v in lhdict.items()]
-
+            
             rhgii=nib.load(rhannotfile)
             rhlabels=rhgii.agg_data()
             rhdict=rhgii.labeltable.get_labels_as_dict()
             rhnames=[v for k,v in rhdict.items()]
             rhvals=[k for k,v in rhdict.items()]
-            
+
         if lhannotprefix is not None:
             lhnames=['%s%s' % (lhannotprefix,x) for x in lhnames]        
         if rhannotprefix is not None:
@@ -170,10 +170,10 @@ def fill_volume_rois(roivals, atlasinfo, backgroundval=0, referencevolume=None):
     if not 'subcorticalvolume' in atlasinfo or \
         atlasinfo['subcorticalvolume'] is None or \
         atlasinfo['subcorticalvolume'] == "":
-        raise Exception("Subcortical volume not found for atlas '%s'" % (atlasinfo["name"]))
+        raise Exception("Subcortical volume not found for atlas '%s'" % (atlasinfo["atlasname"]))
     
     roilutfile=atlasinfo['roilutfile']
-    Troi=pd.read_table(roilutfile,delimiter='\s+',header=None,names=['label','name','R','G','B'])
+    Troi=pd.read_table(roilutfile,delimiter='\s+',header=None,names=['label','name','R','G','B','A'])
     Troi=Troi[Troi['name']!='Unknown']
     
     roinib=nib.load(atlasinfo["subcorticalvolume"])
@@ -279,6 +279,11 @@ def retrieve_atlas_info(atlasname, lookup=False, atlasinfo_jsonfile=None, script
     
     if atlasname == 'list':
         return list(atlas_info_list.keys())
+    
+    for a in atlas_info_list.keys():
+        if 'aliases' in atlas_info_list[a] and atlasname in atlas_info_list[a]['aliases']:
+            atlasname=a
+            break
     
     if atlasname in atlas_info_list:
         roicount=atlas_info_list[atlasname]['roicount']

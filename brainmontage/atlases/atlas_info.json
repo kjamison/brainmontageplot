@@ -72,5 +72,17 @@
         "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.HCP_MMP1.label.gii",
         "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.HCP_MMP1.label.gii",
         "annotsurface_lookup": "fsaverage"
-    }
+    },
+    "cocommpsuit439": {
+        "aliases": ["coco439"],
+        "roicount": 439,
+        "roilut": "%SCRIPTDIR%/atlases/cocommpsuit439_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/fsaverage5.lh.HCP_MMP1.label.gii",
+        "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.HCP_MMP1.label.gii",
+        "subcorticalvolume": "%SCRIPTDIR%/atlases/cocommpsuit439_subcortical.nii.gz",
+        "annotsurface": "fsaverage5",
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.HCP_MMP1.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.HCP_MMP1.label.gii",
+        "annotsurface_lookup": "fsaverage"
+    }    
 }
