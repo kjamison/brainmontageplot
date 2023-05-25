@@ -73,7 +73,9 @@ def parse_argument_montageplot(argv):
     misc_arg_group.add_argument('--version',action='store_true',dest='version')
     misc_arg_group.add_argument('--nolookup',action='store_true',dest='no_lookup',help='Do not use saved lookups (mainly for testing)')
     misc_arg_group.add_argument('--createlookup',action='store_true',dest='create_lookup',help='Create lookup if not found')
-    misc_arg_group.add_argument('--clearcache',action='store_true',dest='clear_cache',help='Clear all stored lookups and facemapping cache')
+    misc_arg_group.add_argument('--clearall',action='store_true',dest='clear_all_cache',help='Clear all stored lookups and facemapping cache')
+    misc_arg_group.add_argument('--clearlookups',action='store_true',dest='clear_lookups',help='Clear all stored lookups')
+    misc_arg_group.add_argument('--clearfacemaps',action='store_true',dest='clear_facemaps',help='Clear all stored face-mapping cache')
 
     args=parser.parse_args(argv)
 
@@ -1012,8 +1014,23 @@ def get_data_dir(data_type):
     else:
         raise Exception("Unknwn data path type: %s. Choose from %s" % (data_type, ",".join(data_paths.keys())))
     
-def clear_cache():
-    cache_dirs=[get_data_dir('facemap'), get_data_dir('lookup'), get_data_dir('nilearn')]
+def clear_cache(which_cache='facemap'):
+    if isinstance(which_cache,str):
+        which_cache=[which_cache]
+
+    cache_dirs=[]
+    if 'facemap' in which_cache:
+        cache_dirs+=[get_data_dir('facemap')]
+    if 'lookup' in which_cache:
+        cache_dirs+=[get_data_dir('lookup')]
+    if 'nilearn' in which_cache:
+        cache_dirs+=[get_data_dir('nilearn')]
+
+    if 'all' in which_cache:
+        cache_dirs+=[get_data_dir(s) for s in ['facemap','lookup','nilearn']]
+
+    cache_dirs=list(set(cache_dirs))
+
     for d in cache_dirs:
         try:
             if os.path.exists(d):
@@ -1056,8 +1073,13 @@ def run_montageplot(argv=None):
     stackdirection=args.stackdirection
     slicedict_order=None
 
-    if args.clear_cache:
-        clear_cache()
+    if args.clear_facemaps:
+        clear_cache('facemap')
+    elif args.clear_lookups:
+        clear_cache('lookup')
+    elif args.clear_all_cache:
+        clear_cache('all')
+        
 
     slicemosaic_dict={'axial':args.axmosaic,'coronal':args.cormosaic,'sagittal':args.sagmosaic}
     slicedict={}
