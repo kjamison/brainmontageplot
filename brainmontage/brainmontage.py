@@ -56,6 +56,7 @@ def parse_argument_montageplot(argv):
     slice_arg_group.add_argument('--cormosaic',action='store',dest='cormosaic',type=int,nargs=2,help="NUMROW NUMCOL for CORONAL slices")
     slice_arg_group.add_argument('--sagmosaic',action='store',dest='sagmosaic',type=int,nargs=2,help="NUMROW NUMCOL for SAGITTAL slices")
     slice_arg_group.add_argument('--stackdir',action='store',dest='stackdirection',default='horizontal',help='Stack surf+slices horizontal or vertical')
+    slice_arg_group.add_argument('--slicebgalpha',action='store',dest='slice_background_alpha',type=float,default=1,help='Opacity of slice background volume')
 
     atlasname_arg_group=parser.add_argument_group('Atlas option 1: atlas name')
     atlasname_arg_group.add_argument('--atlasname',action='store',dest='atlasname')
@@ -675,7 +676,7 @@ def render_surface_view(surfvals,surf,azel=None,surfbgvals=None,shading=True,lig
             pix[:,:,3]=pixalpha
     return pix
 
-def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mosaic,cmap,clim,bg_cmap,blank_cmap):
+def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mosaic,cmap,clim,bg_cmap,blank_cmap,background_alpha=1):
     imgslice,mosiacinfo=vol2mosaic(volvals, sliceaxis=sliceaxis, slice_indices=slice_indices, mosaic=mosaic)
     imgslice_brainbg,_=vol2mosaic(bgvolvals,sliceaxis=sliceaxis,slice_indices=mosiacinfo['slice_indices'],mosaic=mosiacinfo['mosaic'])
     imgslice_brainmask,_=vol2mosaic(bgmaskvals,sliceaxis=sliceaxis,slice_indices=mosiacinfo['slice_indices'],mosaic=mosiacinfo['mosaic'])
@@ -684,8 +685,10 @@ def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mos
     rgbblank=val2rgb(np.zeros(imgslice.shape),blank_cmap,[0,1])
     imgslice_alpha=np.atleast_3d(np.logical_not(np.isnan(imgslice)))
     imgslice_brainmask=np.atleast_3d(imgslice_brainmask)
-    rgbslice=rgbslice_brainbg*(1-imgslice_alpha)+rgbslice*(imgslice_alpha)
-    rgbslice=rgbblank*(1-imgslice_brainmask)+rgbslice*(imgslice_brainmask)
+    #combine blank and bgvol using headmask and global alpha
+    rgbslice_background=rgbblank*(1-imgslice_brainmask*background_alpha)+rgbslice_brainbg*(imgslice_brainmask*background_alpha)
+    #now mix data volume
+    rgbslice=rgbslice_background*(1-imgslice_alpha)+rgbslice*(imgslice_alpha)
 
     return rgbslice
 
@@ -759,7 +762,7 @@ def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorba
 def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     roilutfile=None,lhannotfile=None,rhannotfile=None,annotsurfacename='fsaverage5',lhannotprefix=None, rhannotprefix=None, subcorticalvolume=None,
     viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=1, backgroundcolor="white",
-    slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal',
+    slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal', slice_background_alpha=1,
     outputimagefile=None, figdpi=200, no_lookup=False, create_lookup=False,face_mode='mode',face_best_mode_iters=5,
     add_colorbar=False, colorbar_color=None, colorbar_fontsize=None,colorbar_location='right'):
 
@@ -1021,7 +1024,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         if not a in mosaic_dict:
             mosaic_dict[a]=None
         imgslice_dict[a]=slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis=sliceax[a],slice_indices=slice_dict[a],mosaic=mosaic_dict[a],
-                                                   cmap=slicevol_cmap,clim=clim,bg_cmap=bgvol_cmap,blank_cmap=blank_cmap)
+                                                   cmap=slicevol_cmap,clim=clim,bg_cmap=bgvol_cmap,blank_cmap=blank_cmap, background_alpha=slice_background_alpha)
 
     #order slice axes were given
     imgslice_list=[imgslice_dict[k] for k in slicestack_order if k in imgslice_dict]
@@ -1151,6 +1154,7 @@ def run_montageplot(argv=None):
     slicearg=args.slices
     stackdirection=args.stackdirection
     slicedict_order=None
+    slice_background_alpha=args.slice_background_alpha
 
     add_colorbar=args.colorbar
     colorbar_color=args.colorbar_color
@@ -1277,7 +1281,7 @@ def run_montageplot(argv=None):
     img=create_montage_figure(roivals,atlasinfo=atlas_info,
         viewnames=viewnames,surftype=surftype,clim=clim,colormap=cmap,noshading=no_shading,
         outputimagefile=outputimage,upscale_factor=upscale_factor,slicestack_direction=stackdirection,
-        slice_dict=slicedict,mosaic_dict=slicemosaic_dict,slicestack_order=slicedict_order,
+        slice_dict=slicedict,mosaic_dict=slicemosaic_dict,slicestack_order=slicedict_order,slice_background_alpha=slice_background_alpha,
         backgroundcolor=bgcolor,no_lookup=no_lookup,create_lookup=create_lookup,
         face_mode=facemode,face_best_mode_iters=bestmodeiters,
         add_colorbar=add_colorbar, colorbar_color=colorbar_color,colorbar_fontsize=colorbar_fontsize,colorbar_location=colorbar_location)
