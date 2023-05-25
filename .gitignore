@@ -1,6 +1,7 @@
 .DS_Store
 notes/
 nilearn_data/
+atlas_cache/
 .idea/
 .ipynb_checkpoints/
 __pycache__/
