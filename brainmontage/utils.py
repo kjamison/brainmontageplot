@@ -52,20 +52,24 @@ def get_light_dir(hemi,viewname):
     view_lightdir['right']={'dorsal':[0,0,1],'lateral':[1,0,0],'medial':[-1,0,0],'ventral':[0,0,-1],'anterior':[0,1,0],'posterior':[0,-1,0]}
     return view_lightdir[hemi][viewname]
 
-def cropbg(img,bgcolor=None,return_bbox=True):
+def cropbg(img,bgcolor=None,return_bbox=True,cropcoord=None):
     was_2d=False
     if img.ndim == 2:
         was_2d=True
         img=np.stack([img]*3,axis=2)
     
-    if bgcolor is None:
-        bgcolor=img[0,0,:]
-    bgcolor=np.reshape(bgcolor,[1,1,img.shape[2]])
-    bgimg=np.repeat(np.repeat(bgcolor,img.shape[0],axis=0),img.shape[1],axis=1)
-    bgmask=np.logical_not(np.all(img==bgimg,axis=2))
-    idx0=np.argwhere(np.any(bgmask,axis=1)).flatten()
-    idx1=np.argwhere(np.any(bgmask,axis=0)).flatten()
-    cropcoord=[idx0[0],idx0[-1]+1,idx1[0],idx1[-1]+1]
+    if cropcoord is not None:
+        return_bbox=False
+    
+    if cropcoord is None:
+        if bgcolor is None:
+            bgcolor=img[0,0,:]
+        bgcolor=np.reshape(bgcolor,[1,1,img.shape[2]])
+        bgimg=np.repeat(np.repeat(bgcolor,img.shape[0],axis=0),img.shape[1],axis=1)
+        bgmask=np.logical_not(np.all(img==bgimg,axis=2))
+        idx0=np.argwhere(np.any(bgmask,axis=1)).flatten()
+        idx1=np.argwhere(np.any(bgmask,axis=0)).flatten()
+        cropcoord=[idx0[0],idx0[-1]+1,idx1[0],idx1[-1]+1]
     newimg=img[cropcoord[0]:cropcoord[1],cropcoord[2]:cropcoord[3],:]
     if was_2d:
         newimg=newimg[:,:,0]
@@ -279,8 +283,10 @@ def fig2pixels(fig,imgbuffer=None,dpi=100):
     img=Image.open(imgbuffer,'r')
     return np.asarray(img)
 
-def save_image(imgdata,filename):
+def save_image(imgdata,filename,dpi=None):
+    if dpi is not None:
+        dpi=[dpi,dpi]
     if isinstance(imgdata,Image.Image):
-        imgdata.save(filename)
+        imgdata.save(filename,dpi=dpi)
     else:
-        Image.fromarray(imgdata).save(filename)
+        Image.fromarray(imgdata).save(filename,dpi=dpi)
