@@ -68,7 +68,13 @@ def parse_argument_montageplot(argv):
     atlasopt_arg_group.add_argument('--rhannotprefix',action='store',dest='rhannotprefix')
     atlasopt_arg_group.add_argument('--annotsurfacename',action='store',dest='annotsurface',default='fsaverage5')
     atlasopt_arg_group.add_argument('--subcortvolume',action='store',dest='subcortvol')
-    
+   
+    cbar_arg_group=parser.add_argument_group('Colorbar options')
+    cbar_arg_group.add_argument('--colorbar',action='store_true',dest='colorbar',help='Add colorbar to output image')
+    cbar_arg_group.add_argument('--colorbarcolor',action='store',dest='colorbar_color',help='Color to use for colorbar ticks, box, labels')
+    cbar_arg_group.add_argument('--colorbarfontsize',action='store',dest='colorbar_fontsize',help='Font size for colorbar')
+    cbar_arg_group.add_argument('--colorbarlocation',action='store',dest='colorbar_location',default='right',help='Location for color bar (default=right)')
+
     misc_arg_group=parser.add_argument_group('Other options')
     misc_arg_group.add_argument('--version',action='store_true',dest='version')
     misc_arg_group.add_argument('--nolookup',action='store_true',dest='no_lookup',help='Do not use saved lookups (mainly for testing)')
@@ -683,11 +689,79 @@ def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mos
 
     return rgbslice
 
+def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorbar_location=None,padding=None,figdpi=None,colormap=None,clim=None,backgroundcolor=None):
+    
+    #new figure with extra size for colorbar (will crop extra later)
+    cbar_extra_scale=1.25
+
+    labelsetter=None
+    if colorbar_location is None or colorbar_location == 'right':
+        newfigsize=[cbar_extra_scale*img.shape[1]/figdpi,img.shape[0]/figdpi]
+        newaxsize=[0,0,1/cbar_extra_scale,1]
+        cbar_w=.05
+        cbar_hpad=.03
+        cbar_vpad=.03
+        cbar_inset_size=[1+cbar_hpad, cbar_vpad, cbar_w, 1-2*cbar_vpad]
+        cbar_orientation="vertical"
+    elif colorbar_location == 'left':
+        newfigsize=[cbar_extra_scale*img.shape[1]/figdpi,img.shape[0]/figdpi]
+        newaxsize=[1-1/cbar_extra_scale,0,1/cbar_extra_scale,1]
+        cbar_w=.05
+        cbar_hpad=.03
+        cbar_vpad=.03
+        cbar_inset_size=[-cbar_w-cbar_hpad, cbar_vpad, cbar_w, 1-2*cbar_vpad]
+        cbar_orientation="vertical"
+        labelsetter=lambda hcbar:hcbar.ax.tick_params(left=True,right=False,labelleft=True,labelright=False)
+    elif colorbar_location == 'top':
+        newfigsize=[img.shape[1]/figdpi,cbar_extra_scale*img.shape[0]/figdpi]
+        newaxsize=[0,0,1,1/cbar_extra_scale]
+        cbar_h=.05
+        cbar_vpad=0.03       
+        cbar_hpad=0.03     
+        cbar_inset_size=[cbar_hpad, 1+cbar_vpad, 1-2*cbar_hpad, cbar_h ]
+        cbar_orientation="horizontal"
+        labelsetter=lambda hcbar:hcbar.ax.tick_params(top=True,bottom=False,labeltop=True,labelbottom=False)
+    elif colorbar_location == 'bottom':
+        newfigsize=[img.shape[1]/figdpi,cbar_extra_scale*img.shape[0]/figdpi]
+        newaxsize=[0,1-1/cbar_extra_scale,1,1/cbar_extra_scale]
+        cbar_h=.05
+        cbar_vpad=0.03
+        cbar_hpad=.03
+        cbar_inset_size=[cbar_hpad, -cbar_vpad-cbar_h, 1-2*cbar_hpad, cbar_h ]
+        cbar_orientation="horizontal"
+
+    fig=plt.figure(figsize=newfigsize,dpi=figdpi,facecolor=backgroundcolor)
+    plt.axis('off')
+    ax=fig.gca()
+    ax.set_position(newaxsize)
+    himg=ax.imshow(img,cmap=colormap,vmin=clim[0],vmax=clim[1])
+    inset_axesaxins = ax.inset_axes(cbar_inset_size,transform=ax.transAxes)
+    hcbar=plt.colorbar(himg,cax=inset_axesaxins,orientation=cbar_orientation)
+    hcbar.ax.tick_params(axis='y', direction='in',labelsize=colorbar_fontsize)
+    if labelsetter is not None:
+        labelsetter(hcbar)
+    if colorbar_color is not None:
+        hcbar.ax.tick_params(color=colorbar_color,labelcolor=colorbar_color)
+        hcbar.outline.set_color(colorbar_color)
+
+    newimg=fig2pixels(fig,dpi=figdpi)
+    plt.close(fig)
+    
+    _,cropcoord=cropbg(newimg)
+    
+    #cropcoord[0]=0
+    #cropcoord[2]=0
+    newimg=cropbg(newimg,cropcoord=cropcoord)
+    newimg=padimage(newimg,padamount=padding)
+    
+    return newimg
+    
 def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     roilutfile=None,lhannotfile=None,rhannotfile=None,annotsurfacename='fsaverage5',lhannotprefix=None, rhannotprefix=None, subcorticalvolume=None,
     viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=1, backgroundcolor="white",
     slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal',
-    outputimagefile=None, figdpi=200, no_lookup=False, create_lookup=False,face_mode='mode',face_best_mode_iters=5):
+    outputimagefile=None, figdpi=200, no_lookup=False, create_lookup=False,face_mode='mode',face_best_mode_iters=5,
+    add_colorbar=False, colorbar_color=None, colorbar_fontsize=None,colorbar_location='right'):
 
     #default factor=1 is way too big in general, so for surface views scale this down by 25%
     surface_scale_factor=upscale_factor*.25
@@ -994,12 +1068,17 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         else:
             pixlist_stack=np.vstack(imgslice_list_resized)
     
+    if fig is not None:
+        plt.close(fig)
+
+    if add_colorbar:
+        pixlist_stack=add_colorbar_to_image(pixlist_stack,colorbar_color=colorbar_color,colorbar_fontsize=colorbar_fontsize,colorbar_location=colorbar_location,
+                                            padding=25,figdpi=figdpi,colormap=colormap,clim=clim,backgroundcolor=backgroundcolor)
+    
     if outputimagefile is not None:
         save_image(pixlist_stack,outputimagefile)
         print("Saved %s" % (outputimagefile))
     
-    if fig is not None:
-        plt.close(fig)
 
     return pixlist_stack
 
@@ -1072,6 +1151,11 @@ def run_montageplot(argv=None):
     slicearg=args.slices
     stackdirection=args.stackdirection
     slicedict_order=None
+
+    add_colorbar=args.colorbar
+    colorbar_color=args.colorbar_color
+    colorbar_fontsize=args.colorbar_fontsize
+    colorbar_location=args.colorbar_location
 
     if args.clear_facemaps:
         clear_cache('facemap')
@@ -1195,7 +1279,8 @@ def run_montageplot(argv=None):
         outputimagefile=outputimage,upscale_factor=upscale_factor,slicestack_direction=stackdirection,
         slice_dict=slicedict,mosaic_dict=slicemosaic_dict,slicestack_order=slicedict_order,
         backgroundcolor=bgcolor,no_lookup=no_lookup,create_lookup=create_lookup,
-        face_mode=facemode,face_best_mode_iters=bestmodeiters)
+        face_mode=facemode,face_best_mode_iters=bestmodeiters,
+        add_colorbar=add_colorbar, colorbar_color=colorbar_color,colorbar_fontsize=colorbar_fontsize,colorbar_location=colorbar_location)
 
 if __name__ == "__main__":
     run_montageplot(sys.argv[1:])
