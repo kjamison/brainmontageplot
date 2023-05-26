@@ -36,14 +36,14 @@ brainmontage
 --backgroundcolor COLORNAME         color name for background (default: white)
 [--backgroundrgb R G B]               or specify background as R G B triplet (values 0-1.0)
 [--noshading]                       don't apply surface lighting
---facemode                          face color mode: mode (default), mean, best (slower)
+--facemode <[mode],mean,best>       face color mode: mode (default), mean, best (slower)
 --bestmodeiters                     For "best" facemode, how many selection smoothing iterations (default=5)
 
 #color bar options
 --colorbar                          Add colorbar to output image
---colorbarcolor                     Colorbar tick+label color. Can change to "white" for dark backgrounds
---colorbarfontsize                  Font size for colorbar label values
---colorbarlocation                   right (default), left, top, bottom
+--colorbarcolor COLORNAME           Colorbar tick+label color. Can change to "white" for dark backgrounds
+--colorbarfontsize FONTSIZE         Font size for colorbar label values
+--colorbarlocation LOCATION         right (default), left, top, bottom
 
 #optional volume slices
 --slices <ax,cor,sag> <slice idx>   List of slice axes names followed by and indices
@@ -54,6 +54,7 @@ brainmontage
 --cormosaic ROWS COLS                * default = square. 
 --sagmosaic ROWS COLS                * One of ROWS or COLS can be -1
 --stackdir <[horizontal],vertical>  should slice mosaics be stacked horizontal or vertical (surface views always vertical)
+--slicebgalpha ALPHAVAL             opacity value for brain slice background volume (default=1)
 
 # atlas info option 1:
 [--atlasname ATLASNAME]             atlas name for entry in atlas_info.json
