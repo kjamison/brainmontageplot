@@ -8,6 +8,7 @@ Requirements: python3 (<3.11 for now!), nilearn (for main plotting functions), n
 
 [atlas_info.json](brainmontage/atlases/atlas_info.json) contains information about the currently supported atlases to map ROIs to surface vertices.
 * fs86: FreeSurfer Desikan-Killiany 68 cortical gyri + 18 aseg subcortical.
+* fs86sub: Same as fs86, but it projects all of the subcortical structures (except cerebellum) onto the medial wall. See [example](examples/mydata_fs86sub_montage.png)
 * shen268: 268-region cortical+subcortical atlas from [Shen 2013](https://pubmed.ncbi.nlm.nih.gov/23747961/)
 * schaefer100(200,300,400): 100-400 region cortical atlas from [Schaefer 2018](https://pubmed.ncbi.nlm.nih.gov/28981612/). Uses 7Network order.
 * hcpmmp: 360 region cortical atlas from [Glasser 2016](https://pubmed.ncbi.nlm.nih.gov/27437579/)
@@ -117,4 +118,4 @@ img_slices=create_montage_figure(roivals,atlasname='fs86',
     outputimagefile='mydata_montage_onlyslices.png')
 
 ```
-<img src="examples/mydata_montage.png" width=25%> <img src="examples/mydata_montage_whitesurf.png" width=25%> <img src="examples/mydata_montage_withslices.png" width=25%> <img src="examples/mydata_montage_withcolorbar.png" width=25%> <img src="examples/mydata_montage_onlyslices.png" width=25%>
+<img src="examples/mydata_montage.png" width=25%> <img src="examples/mydata_montage_whitesurf.png" width=25%> <img src="examples/mydata_montage_withslices.png" width=25%> <img src="examples/mydata_montage_withcolorbar.png" width=25%> <img src="examples/mydata_montage_onlyslices.png" width=25%> <img src="examples/mydata_fs86sub_montage.png" width=25%> 
