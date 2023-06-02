@@ -12,6 +12,17 @@
         "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.aparc.label.gii",
         "annotsurface_lookup": "fsaverage"
     },
+    "fs86sub": {
+        "roicount": 86,
+        "roilut": "%SCRIPTDIR%/atlases/fs86_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/fsaverage5.lh.fs86sub.label.gii",
+        "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.fs86sub.label.gii",
+        "annotsurface": "fsaverage5",
+        "subcorticalvolume": "%SCRIPTDIR%/atlases/fs86_subcortical.nii.gz",
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.fs86sub.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.fs86sub.label.gii",
+        "annotsurface_lookup": "fsaverage"
+    },
     "shen268": {
         "roicount": 268,
         "roilut": "%SCRIPTDIR%/atlases/shen268_LUT.txt",
