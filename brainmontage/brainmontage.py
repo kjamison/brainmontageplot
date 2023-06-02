@@ -83,6 +83,7 @@ def parse_argument_montageplot(argv):
     misc_arg_group.add_argument('--clearall',action='store_true',dest='clear_all_cache',help='Clear all stored lookups and facemapping cache')
     misc_arg_group.add_argument('--clearlookups',action='store_true',dest='clear_lookups',help='Clear all stored lookups')
     misc_arg_group.add_argument('--clearfacemaps',action='store_true',dest='clear_facemaps',help='Clear all stored face-mapping cache')
+    misc_arg_group.add_argument('--showcache',action='store_true',dest='show_cache',help='Show cache locations')
 
     args=parser.parse_args(argv)
 
@@ -1123,6 +1124,34 @@ def clear_cache(which_cache='facemap'):
             print(e)
             print("Could not clear cache folder %s" % (d))
 
+def print_cache(which_cache='facemap'):
+    if isinstance(which_cache,str):
+        which_cache=[which_cache]
+
+    cache_dirs=[]
+    if 'facemap' in which_cache:
+        cache_dirs+=[get_data_dir('facemap')]
+    if 'lookup' in which_cache:
+        cache_dirs+=[get_data_dir('lookup')]
+    if 'nilearn' in which_cache:
+        cache_dirs+=[get_data_dir('nilearn')]
+
+    if 'all' in which_cache:
+        which_cache=['facemap','lookup','nilearn']
+
+    which_cache=list(set(which_cache))
+
+    for c in which_cache:
+        d=get_data_dir(c)
+        try:
+            if os.path.exists(d):
+                print("")
+                print("%s: %s" % (c,d))
+                print("\n".join(os.listdir(d)))
+        except Exception as e:
+            print(e)
+            print("Could not display cache folder %s" % (d))
+
 def run_montageplot(argv=None):
     if argv is None:
         argv=sys.argv[1:]
@@ -1162,6 +1191,10 @@ def run_montageplot(argv=None):
     colorbar_fontsize=args.colorbar_fontsize
     colorbar_location=args.colorbar_location
 
+    if args.show_cache:
+        print_cache('all')
+        exit(0)
+    
     if args.clear_facemaps:
         clear_cache('facemap')
     elif args.clear_lookups:
