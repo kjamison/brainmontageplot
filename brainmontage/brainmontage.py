@@ -133,9 +133,11 @@ def fill_surface_rois(roivals,atlasinfo):
             rhvals=[k for k,v in rhdict.items()]
 
         if lhannotprefix is not None:
-            lhnames=['%s%s' % (lhannotprefix,x) for x in lhnames]        
+            if not any([x.startswith(lhannotprefix) for x in lhnames]):
+                lhnames=['%s%s' % (lhannotprefix,x) for x in lhnames]        
         if rhannotprefix is not None:
-            rhnames=['%s%s' % (rhannotprefix,x) for x in rhnames]
+            if not any([x.startswith(rhannotprefix) for x in rhnames]):
+                rhnames=['%s%s' % (rhannotprefix,x) for x in rhnames]
 
         lhannotval=np.zeros(Troi.shape[0])
         rhannotval=np.zeros(Troi.shape[0])
@@ -144,7 +146,7 @@ def fill_surface_rois(roivals,atlasinfo):
             rhidx=[j for j,nannot in enumerate(rhnames) if nannot==n86]
             if len(lhidx)==1:
                 lhannotval[i]=lhvals[lhidx[0]]
-            elif len(rhidx)==1:
+            if len(rhidx)==1:
                 rhannotval[i]=rhvals[rhidx[0]]
         
     elif lhannotfile.endswith(".shape.gii"):
