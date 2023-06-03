@@ -813,6 +813,28 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
 
     atlasname=atlasinfo['atlasname']
 
+    if isinstance(colormap,str) and colormap.lower()=='lut' and atlasinfo['roilutfile'] is not None:
+        #generate new colormap and roivals from LUT
+        if not os.path.exists(atlasinfo['roilutfile']):
+            raise Exception("ROI LUT file must exist for lut cmap option")
+        
+        Troi=pd.read_table(atlasinfo['roilutfile'],delimiter='\s+',header=None,names=['label','name','R','G','B','A'])
+        Troi=Troi[Troi['name']!='Unknown']
+        cmapdata=np.stack((Troi['R'],Troi['G'],Troi['B']),axis=-1).astype(float)
+
+        if np.all(np.isnan(cmapdata)):
+            cmapdata=np.random.random(cmapdata.shape)
+
+        if cmapdata.max()>1:
+            cmapdata/=255
+        
+        cmapdata=np.clip(cmapdata,0,1)
+
+        print("For cmapfile=%s, override input values and clim to display LUT colormap: %s." % (colormap,atlasinfo['roilutfile']))
+        colormap=ListedColormap(cmapdata)
+        roivals=np.arange(cmapdata.shape[0])+1
+        clim=[0.5,cmapdata.shape[0]+.5]
+    
     #just to make things easier now that we are inside the function
     shading=not noshading
     
@@ -1306,32 +1328,15 @@ def run_montageplot(argv=None):
     #do cmapfile AFTER checking atlasinfo
     if cmapfile is not None:
         if cmapfile.lower() in ["lookup","lut","rgb"]:
-            if not os.path.exists(atlas_info['roilutfile']):
-                print("ROI LUT file must exist for lut cmap option")
-                exit(1)
-            
-            Troi=pd.read_table(atlas_info['roilutfile'],delimiter='\s+',header=None,names=['label','name','R','G','B','A'])
-            Troi=Troi[Troi['name']!='Unknown']
-            cmapdata=np.stack((Troi['R'],Troi['G'],Troi['B']),axis=-1).astype(float)
-
-            if np.all(np.isnan(cmapdata)):
-                cmapdata=np.random.random(cmapdata.shape)
-
-            if cmapdata.max()>1:
-                cmapdata/=255
-            
-            cmapdata=np.clip(cmapdata,0,1)
-
-            print("For cmapfile=%s, override input values and clim to display LUT colormap: %s." % (cmapfile,atlas_info['roilutfile']))
-            roivals=np.arange(cmapdata.shape[0])+1
-            clim=[0.5,cmapdata.shape[0]+.5]
+            cmap='lut'
+            roivals=1 #placeholder
         else:
             cmapdata=np.loadtxt(cmapfile)
-        if cmapdata.shape[1]!=3:
-            raise Exception("colormap file must have 3 columns")
-        if cmapdata.max()>1:
-            cmapdata/=255
-        cmap=ListedColormap(cmapdata)
+            if cmapdata.shape[1]!=3:
+                raise Exception("colormap file must have 3 columns")
+            if cmapdata.max()>1:
+                cmapdata/=255
+            cmap=ListedColormap(cmapdata)
         
     if roivals is None:
         raise Exception("Invalid inputfile: %s" % (inputfile))
