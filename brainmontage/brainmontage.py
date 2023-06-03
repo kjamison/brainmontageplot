@@ -1260,19 +1260,10 @@ def run_montageplot(argv=None):
     except:
         cmap=cmapname
     
-    if cmapfile is not None:
-        cmapdata=np.loadtxt(cmapfile)
-        if cmapdata.shape[1]!=3:
-            raise Exception("colormap file must have 3 columns")
-        if cmapdata.max()>1:
-            cmapdata/=255
-        cmap=ListedColormap(cmapdata)
-        
-    #roivals=np.arange(86)+1
-    
     if inputfile is None:
         inputfile=""
     
+    roivals=None
     if len(inputvals_arg)>0:
         roivals=np.array(inputvals_arg).astype(float)
     elif inputfile.lower().endswith(".txt"):
@@ -1288,8 +1279,6 @@ def run_montageplot(argv=None):
             roivals=Mroivals[inputfieldname]
         else:
             raise Exception("Multiple data fields found in %s. Specify one with --inputfield:",mkeys)
-    else:
-        raise Exception("Invalid inputfile: %s" % (inputfile))
     
     if atlasname is not None:
         atlasname=args.atlasname.lower()
@@ -1313,7 +1302,40 @@ def run_montageplot(argv=None):
     except:
         print("facemode must be one of: %s" % (",".join(facemode_allowed)))
         exit(1)
+    
+    #do cmapfile AFTER checking atlasinfo
+    if cmapfile is not None:
+        if cmapfile.lower() in ["lookup","lut","rgb"]:
+            if not os.path.exists(atlas_info['roilutfile']):
+                print("ROI LUT file must exist for lut cmap option")
+                exit(1)
+            
+            Troi=pd.read_table(atlas_info['roilutfile'],delimiter='\s+',header=None,names=['label','name','R','G','B','A'])
+            Troi=Troi[Troi['name']!='Unknown']
+            cmapdata=np.stack((Troi['R'],Troi['G'],Troi['B']),axis=-1).astype(float)
+
+            if np.all(np.isnan(cmapdata)):
+                cmapdata=np.random.random(cmapdata.shape)
+
+            if cmapdata.max()>1:
+                cmapdata/=255
+            
+            cmapdata=np.clip(cmapdata,0,1)
+
+            print("For cmapfile=%s, override input values and clim to display LUT colormap: %s." % (cmapfile,atlas_info['roilutfile']))
+            roivals=np.arange(cmapdata.shape[0])+1
+            clim=[0.5,cmapdata.shape[0]+.5]
+        else:
+            cmapdata=np.loadtxt(cmapfile)
+        if cmapdata.shape[1]!=3:
+            raise Exception("colormap file must have 3 columns")
+        if cmapdata.max()>1:
+            cmapdata/=255
+        cmap=ListedColormap(cmapdata)
         
+    if roivals is None:
+        raise Exception("Invalid inputfile: %s" % (inputfile))
+    
     img=create_montage_figure(roivals,atlasinfo=atlas_info,
         viewnames=viewnames,surftype=surftype,clim=clim,colormap=cmap,noshading=no_shading,
         outputimagefile=outputimage,upscale_factor=upscale_factor,slicestack_direction=stackdirection,
