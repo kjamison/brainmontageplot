@@ -680,7 +680,7 @@ def render_surface_view(surfvals,surf,azel=None,surfbgvals=None,shading=True,lig
     return pix
 
 def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mosaic,cmap,clim,bg_cmap,blank_cmap,background_alpha=1):
-    imgslice,mosiacinfo=vol2mosaic(volvals, sliceaxis=sliceaxis, slice_indices=slice_indices, mosaic=mosaic)
+    imgslice,mosiacinfo=vol2mosaic(volvals, sliceaxis=sliceaxis, slice_indices=slice_indices, mosaic=mosaic,extra_slice_val=np.nan)
     imgslice_brainbg,_=vol2mosaic(bgvolvals,sliceaxis=sliceaxis,slice_indices=mosiacinfo['slice_indices'],mosaic=mosiacinfo['mosaic'])
     imgslice_brainmask,_=vol2mosaic(bgmaskvals,sliceaxis=sliceaxis,slice_indices=mosiacinfo['slice_indices'],mosaic=mosiacinfo['mosaic'])
     rgbslice=val2rgb(imgslice,cmap,clim)

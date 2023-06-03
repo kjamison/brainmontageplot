@@ -141,7 +141,7 @@ def val2rgb(v, cmap, clim=None):
     return cmap(v)
 
     
-def vol2mosaic(V, sliceaxis=2, slice_indices=None, mosaic=None):
+def vol2mosaic(V, sliceaxis=2, slice_indices=None, mosaic=None,extra_slice_val=0):
     if len(slice_indices) == 0:
         return None, None
     
@@ -170,7 +170,7 @@ def vol2mosaic(V, sliceaxis=2, slice_indices=None, mosaic=None):
     mosaic=[int(x) for x in mosaic]
     numslices_mosaic=mosaic[0]*mosaic[1]
     if numslices_mosaic>numslices:
-        V_extra=np.zeros((V.shape[0],V.shape[1],numslices_mosaic-numslices))
+        V_extra=extra_slice_val*np.ones((V.shape[0],V.shape[1],numslices_mosaic-numslices))
         V=np.concatenate((V,V_extra),axis=2)
 
     Vmosaic=np.hstack([np.vstack([V[:,:,mosaic[1]*i+x] for x in range(mosaic[1])]) for i in range(mosaic[0])])
