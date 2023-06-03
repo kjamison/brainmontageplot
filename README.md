@@ -32,13 +32,14 @@ brainmontage
 --outputimage OUTPUTIMAGE           image file to save final montage
 --surftype SURFTYPE                 choose from: infl, white, pial. default: infl
 --colormap CMAPNAME                 colormap name from matplotlib colormaps
-[--cmapfile CMAPFILE]               .txt file with R,G,B values for some colormap (or "--cmapfile lut" to draw RGB from LUT)
+[--cmapfile CMAPFILE]               .txt file with R,G,B values on each line for some colormap 
+                                    (or "--cmapfile lut" to draw RGB from LUT)
 --clim MIN MAX                      colormap value range
 --upscale SCALE                     higher value to render images at higher resolution (default=1)
 --backgroundcolor COLORNAME         color name for background (default: white)
 [--backgroundrgb R G B]               or specify background as R G B triplet (values 0-1.0)
 [--noshading]                       don't apply surface lighting
---facemode <[mode],mean,best>       face color mode: mode (default), mean, best (slower)
+--facemode <[mode],mean,best>       face color mode: mode (default, fastest), mean, best (prettier)
 --bestmodeiters                     For "best" facemode, how many selection smoothing iterations (default=5)
 
 #color bar options
@@ -84,10 +85,18 @@ brainmontage --input examples/mydata_fs86.mat --inputfield data --atlasname fs86
     --outputimage mydata_montage_withslices.png 
 ```
 
+Example command-line usage: Surface views with LUT ROI colors
+```
+brainmontage --atlasname fs86sub --cmapfile lut \
+    --outputimage mydata_fs86_lut_montage.png
+```
+
 Example python function usage:
 ```python
 import numpy as np
 from brainmontage import create_montage_figure, save_image
+
+#note: any ROIs with "nan" will not be displayed
 
 roivals=np.arange(86)+1 #example values for each ROI (1-numroi)
 
