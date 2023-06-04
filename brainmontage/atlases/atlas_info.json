@@ -12,7 +12,8 @@
         "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.aparc.label.gii",
         "annotsurface_lookup": "fsaverage"
     },
-    "fs86sub": {
+    "fs86med": {
+        "aliases": ["fs86medial","fs86sub"],
         "roicount": 86,
         "roilut": "%SCRIPTDIR%/atlases/fs86_LUT.txt",
         "lhannot": "%SCRIPTDIR%/atlases/fsaverage5.lh.fs86sub.label.gii",
