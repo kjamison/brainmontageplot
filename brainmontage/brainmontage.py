@@ -802,7 +802,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     
     if atlasinfo is None:
         atlasinfo={}
-        atlasname['atlasname']=None
+        atlasinfo['atlasname']=None
         atlasinfo['roilutfile']=roilutfile
         atlasinfo['lhannotfile']=lhannotfile
         atlasinfo['rhannotfile']=rhannotfile
@@ -870,7 +870,10 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     if no_lookup:
         lookup_dict=None
     else:
-        atlasinfo_lookup=retrieve_atlas_info(atlasname,lookup=True)
+        if atlasname is None:
+            atlasinfo_lookup=atlasinfo
+        else:
+            atlasinfo_lookup=retrieve_atlas_info(atlasname,lookup=True)
         lookup_surface_name=atlasinfo_lookup['annotsurfacename']
         lookup_dir=get_data_dir('lookup')
         lookup_file="%s/meshlookup_%s_%s.mat" % (lookup_dir,surftype,lookup_surface_name)
