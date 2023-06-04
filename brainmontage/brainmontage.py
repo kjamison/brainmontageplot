@@ -1275,13 +1275,7 @@ def run_montageplot(argv=None):
         clim=[np.float32(x) for x in clim]
     else:
         clim=None
-    
-    #nilearn uses 'Spectral' instead of matplotlib 'spectral'
-    try:
-        cmap=stringfromlist(cmapname,list(plt.colormaps.keys()),allow_startswith=False)
-    except:
-        cmap=cmapname
-    
+
     if inputfile is None:
         inputfile=""
     
@@ -1325,18 +1319,25 @@ def run_montageplot(argv=None):
         print("facemode must be one of: %s" % (",".join(facemode_allowed)))
         exit(1)
     
+        
+    #nilearn uses 'Spectral' instead of matplotlib 'spectral'
+    if isinstance(cmapname,str) and cmapname.lower()=='lut':
+        cmap='lut'
+        roivals=1 #placeholder
+    else:
+        try:
+            cmap=stringfromlist(cmapname,list(plt.colormaps.keys()),allow_startswith=False)
+        except:
+            cmap=cmapname
+    
     #do cmapfile AFTER checking atlasinfo
     if cmapfile is not None:
-        if cmapfile.lower() in ["lookup","lut","rgb"]:
-            cmap='lut'
-            roivals=1 #placeholder
-        else:
-            cmapdata=np.loadtxt(cmapfile)
-            if cmapdata.shape[1]!=3:
-                raise Exception("colormap file must have 3 columns")
-            if cmapdata.max()>1:
-                cmapdata/=255
-            cmap=ListedColormap(cmapdata)
+        cmapdata=np.loadtxt(cmapfile)
+        if cmapdata.shape[1]!=3:
+            raise Exception("colormap file must have 3 columns")
+        if cmapdata.max()>1:
+            cmapdata/=255
+        cmap=ListedColormap(cmapdata)
         
     if roivals is None:
         raise Exception("Invalid inputfile: %s" % (inputfile))

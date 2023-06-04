@@ -31,9 +31,8 @@ brainmontage
 --views VIEWNAME VIEWNAME ...       choose from: dorsal, lateral, medial, ventral (or none). default: all
 --outputimage OUTPUTIMAGE           image file to save final montage
 --surftype SURFTYPE                 choose from: infl, white, pial. default: infl
---colormap CMAPNAME                 colormap name from matplotlib colormaps
+--colormap CMAPNAME                 colormap name from matplotlib colormaps (or "lut" for RGB from atlas LUT)
 [--cmapfile CMAPFILE]               .txt file with R,G,B values on each line for some colormap 
-                                    (or "--cmapfile lut" to draw RGB from LUT)
 --clim MIN MAX                      colormap value range
 --upscale SCALE                     higher value to render images at higher resolution (default=1)
 --backgroundcolor COLORNAME         color name for background (default: white)
@@ -87,7 +86,7 @@ brainmontage --input examples/mydata_fs86.mat --inputfield data --atlasname fs86
 
 Example command-line usage: Surface views with LUT ROI colors
 ```
-brainmontage --atlasname fs86sub --cmapfile lut \
+brainmontage --atlasname fs86sub --colormap lut \
     --outputimage mydata_fs86_lut_montage.png
 ```
 
