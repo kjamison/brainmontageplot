@@ -13,6 +13,7 @@ Requirements: python3 (<3.11 for now!), nilearn (for main plotting functions), n
 * schaefer100(200,300,400): 100-400 region cortical atlas from [Schaefer 2018](https://pubmed.ncbi.nlm.nih.gov/28981612/). Uses 7Network order.
 * hcpmmp: 360 region cortical atlas from [Glasser 2016](https://pubmed.ncbi.nlm.nih.gov/27437579/)
 * coco439: 81 subcortical regions + 360 region cortical atlas from [Glasser 2016](https://pubmed.ncbi.nlm.nih.gov/27437579/)
+* cifti91k: Renders 32k_fs_LR data (91282 values = 29696 L verts + 29716 R verts + 31870 subcort voxels), e.g., from HCP pipelines
 
 Installation:
 ```
