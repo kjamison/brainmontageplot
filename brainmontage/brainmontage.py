@@ -139,15 +139,22 @@ def fill_surface_rois(roivals,atlasinfo):
             if not any([x.startswith(rhannotprefix) for x in rhnames]):
                 rhnames=['%s%s' % (rhannotprefix,x) for x in rhnames]
 
+        #now re-fill label values from hemi-specific annot with the values from the full LUT
         lhannotval=np.zeros(Troi.shape[0])
         rhannotval=np.zeros(Troi.shape[0])
+        lhlabels_new=np.zeros(lhlabels.shape)
+        rhlabels_new=np.zeros(rhlabels.shape)
         for i,n86 in enumerate(Troi['name']):
             lhidx=[j for j,nannot in enumerate(lhnames) if nannot==n86]
             rhidx=[j for j,nannot in enumerate(rhnames) if nannot==n86]
             if len(lhidx)==1:
                 lhannotval[i]=lhvals[lhidx[0]]
+                lhlabels_new[lhlabels==lhvals[lhidx[0]]]=Troi['label'].iloc[i]
             if len(rhidx)==1:
                 rhannotval[i]=rhvals[rhidx[0]]
+                rhlabels_new[rhlabels==rhvals[rhidx[0]]]=Troi['label'].iloc[i]
+        lhlabels=lhlabels_new
+        rhlabels=rhlabels_new
         
     elif lhannotfile.endswith(".shape.gii"):
         lhgii=nib.load(lhannotfile)
@@ -156,26 +163,26 @@ def fill_surface_rois(roivals,atlasinfo):
         rhgii=nib.load(rhannotfile)
         rhlabels=rhgii.agg_data()
         
-        maxval=np.max([lhlabels]+[rhlabels])
-        lhannotval=np.arange(1,maxval+1)
-        rhannotval=np.arange(1,maxval+1)
-        
-        Troi=pd.DataFrame()
-    
-    Troi['lhannot']=lhannotval
-    Troi['rhannot']=rhannotval
-    
-    #first make roi index map for each vert (with nans where no ROI)
     surfvalsLR={}
-    surfvalsLR['left']=np.zeros(lhlabels.shape)*np.nan
-    surfvalsLR['right']=np.zeros(rhlabels.shape)*np.nan
-    for i in range(Troi.shape[0]):
-        v=roivals[i]
-        if Troi['lhannot'].iloc[i]>0:
-            surfvalsLR['left'][lhlabels==Troi['lhannot'].iloc[i]]=v
-        if Troi['rhannot'].iloc[i]>0:
-            surfvalsLR['right'][rhlabels==Troi['rhannot'].iloc[i]]=v
-            
+    for hemi in ['left','right']:
+        if hemi == 'left':
+            labels=lhlabels
+        else:
+            labels=rhlabels
+
+        parcmask=labels!=0
+        uparc,uparc_idx=np.unique(labels[parcmask],return_inverse=True)
+        vnew=np.nan*np.ones(labels.shape)
+        uparc=uparc.astype(int)-1
+        if roivals.size<=uparc.max():
+            #expand roivals with nan to maximum needed in parc
+            roivals_new=np.nan*np.ones(uparc.max()+1)
+            roivals_new[:roivals.size]=roivals
+            roivals=roivals_new
+        roivals_uparc=roivals[uparc]
+        vnew[parcmask]=roivals_uparc[uparc_idx]
+        surfvalsLR[hemi]=vnew
+
     return surfvalsLR
 
 def fill_volume_rois(roivals, atlasinfo, backgroundval=0, referencevolume=None):
@@ -202,11 +209,19 @@ def fill_volume_rois(roivals, atlasinfo, backgroundval=0, referencevolume=None):
         roinib=nibproc.resample_from_to(roinib,refnib,order=0)
 
     Vroi=roinib.get_fdata()
+
+    parcmask=Vroi!=0
+    uparc,uparc_idx=np.unique(Vroi[parcmask],return_inverse=True)
     Vnew=backgroundval*np.ones(Vroi.shape)
-    for i in range(Troi.shape[0]):
-        if(np.any(Vroi==Troi['label'].iloc[i])):
-            Vnew[Vroi==Troi['label'].iloc[i]]=roivals[i]
-    
+    uparc=uparc.astype(int)-1
+    if roivals.size<=uparc.max():
+        #expand roivals with nan to maximum needed in parc
+        roivals_new=np.nan*np.ones(uparc.max()+1)
+        roivals_new[:roivals.size]=roivals
+        roivals=roivals_new
+    roivals_uparc=roivals[uparc]
+    Vnew[parcmask]=roivals_uparc[uparc_idx]
+
     return Vnew
 
 def map_vertices_to_faces(surfLR,surfvalsLR,face_mode='mean',face_best_mode_iters=1,atlasinfo=None):
