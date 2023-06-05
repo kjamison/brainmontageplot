@@ -108,9 +108,8 @@ def fill_surface_rois(roivals,atlasinfo):
     if lhannotfile.endswith(".annot") or lhannotfile.endswith(".label.gii"):
         #for .annot files, we neet the LUT that says which names to include and what order they go in
         #read in the .annot data
-        Troi=pd.read_table(roilutfile,delimiter='\s+',header=None,names=['label','name','R','G','B','A'])
-        Troi=Troi[Troi['name']!='Unknown']
-    
+        Troi=read_lut(lutfile=roilutfile)
+
         if lhannotfile.endswith(".annot"):
             lhlabels,ctab,lhnames=nib.freesurfer.io.read_annot(lhannotfile)
             lhnames=[(x.decode('UTF-8')) for x in lhnames]
@@ -192,9 +191,7 @@ def fill_volume_rois(roivals, atlasinfo, backgroundval=0, referencevolume=None):
         atlasinfo['subcorticalvolume'] == "":
         raise Exception("Subcortical volume not found for atlas '%s'" % (atlasinfo["atlasname"]))
     
-    roilutfile=atlasinfo['roilutfile']
-    Troi=pd.read_table(roilutfile,delimiter='\s+',header=None,names=['label','name','R','G','B','A'])
-    Troi=Troi[Troi['name']!='Unknown']
+    Troi=read_lut(lutfile=atlasinfo['roilutfile'])
     
     roinib=nib.load(atlasinfo["subcorticalvolume"])
     
@@ -290,6 +287,34 @@ def map_vertices_to_faces(surfLR,surfvalsLR,face_mode='mean',face_best_mode_iter
         print("Saved cached face-mapping file %s" % (facefile))
     
     return facevalsLR
+
+def read_lut(lutfile=None,atlasname=None,atlasinfo=None):
+    expected_lut_columns=['label','name','R','G','B','A']
+    if atlasinfo is None and atlasname is not None:
+        atlasinfo=retrieve_atlas_info(atlasname)
+    if lutfile is None and atlasinfo is not None:
+        lutfile=atlasinfo['roilutfile']
+    if lutfile.lower().endswith(".mat"):
+        Xlut=loadmat(lutfile,simplify_cells=True)
+        if 'lut' in Xlut:
+            Xlut=Xlut['lut']
+        elif 'LUT' in Xlut:
+            Xlut=Xlut['LUT']
+        else:
+            raise Exception("LUT.mat file must have 'lut' field with ROI x [label,name,R,G,B]")
+
+        lut_columns=expected_lut_columns[:Xlut.shape[1]]
+        Troi=pd.DataFrame(Xlut,columns=lut_columns)
+        for c in expected_lut_columns[Xlut.shape[1]:]:
+            Troi[c]=np.nan*np.ones(Troi.shape[0])
+    else:
+        Troi=pd.read_table(lutfile,delimiter='\s+',header=None,names=expected_lut_columns)
+
+    #remove any entries for 'Unknown' or '???'
+    Troi=Troi[Troi['name']!='Unknown']
+    Troi=Troi[Troi['name']!='???']
+
+    return Troi
 
 def retrieve_atlas_info(atlasname, lookup=False, atlasinfo_jsonfile=None, scriptdir=None):
     if scriptdir is None:
@@ -838,8 +863,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         if not os.path.exists(atlasinfo['roilutfile']):
             raise Exception("ROI LUT file must exist for lut cmap option")
         
-        Troi=pd.read_table(atlasinfo['roilutfile'],delimiter='\s+',header=None,names=['label','name','R','G','B','A'])
-        Troi=Troi[Troi['name']!='Unknown']
+        Troi=read_lut(lutfile=atlasinfo['roilutfile'])
         cmapdata=np.stack((Troi['R'],Troi['G'],Troi['B']),axis=-1).astype(float)
 
         if np.all(np.isnan(cmapdata)):
