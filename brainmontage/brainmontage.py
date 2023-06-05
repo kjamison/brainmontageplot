@@ -5,6 +5,7 @@ import nibabel as nib
 import nibabel.processing as nibproc
 import pandas as pd
 from tqdm import tqdm
+import warnings
 
 import json
 from scipy.io import loadmat, savemat
@@ -250,7 +251,11 @@ def map_vertices_to_faces(surfLR,surfvalsLR,face_mode='mean',face_best_mode_iter
                     break
             if cache_matches:
                 return Mface['facevalsLR']
-            
+
+    if face_mode == 'mean' and atlasinfo is not None and atlasinfo['atlasname']=='cifti91k':
+        warnings.warn("face_mode='mean' cannot be used with cifti91k. Using 'mode' instead.")
+        face_mode='mode'
+    
     facevalsLR={}
 
     for h in ['left','right']:      
