@@ -743,8 +743,8 @@ def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mos
 def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorbar_location=None,padding=None,figdpi=None,colormap=None,clim=None,backgroundcolor=None):
     
     #new figure with extra size for colorbar (will crop extra later)
-    cbar_extra_scale=1.25
-
+    cbar_extra_scale=1.5
+    
     labelsetter=None
     if colorbar_location is None or colorbar_location == 'right':
         newfigsize=[cbar_extra_scale*img.shape[1]/figdpi,img.shape[0]/figdpi]
@@ -1331,6 +1331,8 @@ def run_montageplot(argv=None):
         roivals=np.array(inputvals_arg).astype(float)
     elif inputfile.lower().endswith(".txt"):
         roivals=np.loadtxt(inputfile)
+    elif inputfile.lower().endswith(".csv"):
+        roivals=np.loadtxt(inputfile,delimiter=",")
     elif inputfile.lower().endswith(".mat"):
         
         Mroivals=loadmat(inputfile)
