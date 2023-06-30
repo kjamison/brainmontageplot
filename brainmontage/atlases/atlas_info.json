@@ -75,6 +75,16 @@
         "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.Schaefer2018_400Parcels_7Networks_order.label.gii",
         "annotsurface_lookup": "fsaverage"
     },
+    "schaefer800": {
+        "roicount": 800,
+        "roilut": "%SCRIPTDIR%/atlases/schaefer800_7Networks_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_800Parcels_7Networks_order.annot",
+        "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_800Parcels_7Networks_order.annot",
+        "annotsurface": "fsaverage5",
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.Schaefer2018_800Parcels_7Networks_order.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.Schaefer2018_800Parcels_7Networks_order.label.gii",
+        "annotsurface_lookup": "fsaverage"
+    },
     "hcpmmp": {
         "roicount": 360,
         "roilut": "%SCRIPTDIR%/atlases/HCP_MMP1_LUT.txt",
@@ -83,6 +93,18 @@
         "annotsurface": "fsaverage5",
         "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.HCP_MMP1.label.gii",
         "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.HCP_MMP1.label.gii",
+        "annotsurface_lookup": "fsaverage"
+    },
+    "cocommpsuit439sub": {
+        "aliases": ["coco439sub"],
+        "roicount": 439,
+        "roilut": "%SCRIPTDIR%/atlases/cocommpsuit439_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/fsaverage5.lh.HCP_MMP1.label.gii",
+        "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.HCP_MMP1.label.gii",
+        "subcorticalvolume": "%SCRIPTDIR%/atlases/cocommpsuit439_subcortical.nii.gz",
+        "annotsurface": "fsaverage5",
+        "lhannot_lookup": "/Users/kwj5/Research/atlases/lh.test_fsaverage_coco439_subcortsurf.label.gii",
+        "rhannot_lookup": "/Users/kwj5/Research/atlases/rh.test_fsaverage_coco439_subcortsurf.label.gii",
         "annotsurface_lookup": "fsaverage"
     },
     "cocommpsuit439": {
