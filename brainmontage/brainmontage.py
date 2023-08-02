@@ -76,6 +76,8 @@ def parse_argument_montageplot(argv):
     cbar_arg_group.add_argument('--colorbarcolor',action='store',dest='colorbar_color',help='Color to use for colorbar ticks, box, labels')
     cbar_arg_group.add_argument('--colorbarfontsize',action='store',dest='colorbar_fontsize',help='Font size for colorbar')
     cbar_arg_group.add_argument('--colorbarlocation',action='store',dest='colorbar_location',default='right',help='Location for color bar (default=right)')
+    cbar_arg_group.add_argument('--colorbartext',action='store',dest='colorbar_label',help='Text to to add to colorbar')
+    cbar_arg_group.add_argument('--colorbartextrotation',action='store_true',dest='colorbar_label_rotation',help='Rotate colorbar text 180deg')
 
     misc_arg_group=parser.add_argument_group('Other options')
     misc_arg_group.add_argument('--version',action='store_true',dest='version')
@@ -740,12 +742,17 @@ def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mos
 
     return rgbslice
 
-def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorbar_location=None,padding=None,figdpi=None,colormap=None,clim=None,backgroundcolor=None):
+def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorbar_location=None,colorbar_label=None,colorbar_label_rotation=False,padding=None,figdpi=None,colormap=None,clim=None,backgroundcolor=None):
     
     #new figure with extra size for colorbar (will crop extra later)
     cbar_extra_scale=1.5
     
+    ticksetter=None
     labelsetter=None
+
+    colorbar_label_rotation_default=0
+    colorbar_label_verticalalignment='top'
+
     if colorbar_location is None or colorbar_location == 'right':
         newfigsize=[cbar_extra_scale*img.shape[1]/figdpi,img.shape[0]/figdpi]
         newaxsize=[0,0,1/cbar_extra_scale,1]
@@ -754,6 +761,10 @@ def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorba
         cbar_vpad=.03
         cbar_inset_size=[1+cbar_hpad, cbar_vpad, cbar_w, 1-2*cbar_vpad]
         cbar_orientation="vertical"
+        colorbar_label_rotation_default=90
+        if colorbar_label_rotation:
+            colorbar_label_verticalalignment='bottom'
+
     elif colorbar_location == 'left':
         newfigsize=[cbar_extra_scale*img.shape[1]/figdpi,img.shape[0]/figdpi]
         newaxsize=[1-1/cbar_extra_scale,0,1/cbar_extra_scale,1]
@@ -762,7 +773,13 @@ def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorba
         cbar_vpad=.03
         cbar_inset_size=[-cbar_w-cbar_hpad, cbar_vpad, cbar_w, 1-2*cbar_vpad]
         cbar_orientation="vertical"
-        labelsetter=lambda hcbar:hcbar.ax.tick_params(left=True,right=False,labelleft=True,labelright=False)
+        colorbar_label_rotation_default=90
+        if not colorbar_label_rotation:
+            colorbar_label_verticalalignment='bottom'
+        
+        ticksetter=lambda hcbar:hcbar.ax.tick_params(left=True,right=False,labelleft=True,labelright=False)
+        labelsetter=lambda hcbar:hcbar.ax.yaxis.set_label_position('left')
+        
     elif colorbar_location == 'top':
         newfigsize=[img.shape[1]/figdpi,cbar_extra_scale*img.shape[0]/figdpi]
         newaxsize=[0,0,1,1/cbar_extra_scale]
@@ -771,7 +788,10 @@ def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorba
         cbar_hpad=0.03     
         cbar_inset_size=[cbar_hpad, 1+cbar_vpad, 1-2*cbar_hpad, cbar_h ]
         cbar_orientation="horizontal"
-        labelsetter=lambda hcbar:hcbar.ax.tick_params(top=True,bottom=False,labeltop=True,labelbottom=False)
+        colorbar_label_verticalalignment='bottom'
+        ticksetter=lambda hcbar:hcbar.ax.tick_params(top=True,bottom=False,labeltop=True,labelbottom=False)
+        labelsetter=lambda hcbar:hcbar.ax.xaxis.set_label_position('top')
+        
     elif colorbar_location == 'bottom':
         newfigsize=[img.shape[1]/figdpi,cbar_extra_scale*img.shape[0]/figdpi]
         newaxsize=[0,1-1/cbar_extra_scale,1,1/cbar_extra_scale]
@@ -780,6 +800,11 @@ def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorba
         cbar_hpad=.03
         cbar_inset_size=[cbar_hpad, -cbar_vpad-cbar_h, 1-2*cbar_hpad, cbar_h ]
         cbar_orientation="horizontal"
+        
+    if colorbar_label_rotation:
+        colorbar_label_rotation=colorbar_label_rotation_default + 180
+    else:
+        colorbar_label_rotation=colorbar_label_rotation_default
 
     fig=plt.figure(figsize=newfigsize,dpi=figdpi,facecolor=backgroundcolor)
     plt.axis('off')
@@ -789,8 +814,18 @@ def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorba
     inset_axesaxins = ax.inset_axes(cbar_inset_size,transform=ax.transAxes)
     hcbar=plt.colorbar(himg,cax=inset_axesaxins,orientation=cbar_orientation)
     hcbar.ax.tick_params(axis='y', direction='in',labelsize=colorbar_fontsize)
-    if labelsetter is not None:
+    hcbar.ax.tick_params(axis='x', direction='in',labelsize=colorbar_fontsize)
+
+    if ticksetter is not None:
+        ticksetter(hcbar)
+    if colorbar_label is not None and labelsetter is not None:
         labelsetter(hcbar)
+
+    if colorbar_label is not None:
+        #right: rotation=90, verticalalignment='top' is the default, which reads bottom to top
+        #right: rotation=270, verticalalignment='bottom' reads top to bottom
+        hcbar.set_label(colorbar_label,fontsize=colorbar_fontsize,rotation=colorbar_label_rotation,verticalalignment=colorbar_label_verticalalignment)
+
     if colorbar_color is not None:
         hcbar.ax.tick_params(color=colorbar_color,labelcolor=colorbar_color)
         hcbar.outline.set_color(colorbar_color)
@@ -812,7 +847,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=1, backgroundcolor="white",
     slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal', slice_background_alpha=1,
     outputimagefile=None, figdpi=200, no_lookup=False, create_lookup=False,face_mode='mode',face_best_mode_iters=5,
-    add_colorbar=False, colorbar_color=None, colorbar_fontsize=None,colorbar_location='right'):
+    add_colorbar=False, colorbar_color=None, colorbar_fontsize=None,colorbar_location='right',colorbar_label=None, colorbar_label_rotation=False):
 
     #default factor=1 is way too big in general, so for surface views scale this down by 25%
     surface_scale_factor=upscale_factor*.25
@@ -1149,7 +1184,8 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
 
     if add_colorbar:
         pixlist_stack=add_colorbar_to_image(pixlist_stack,colorbar_color=colorbar_color,colorbar_fontsize=colorbar_fontsize,colorbar_location=colorbar_location,
-                                            padding=25,figdpi=figdpi,colormap=colormap,clim=clim,backgroundcolor=backgroundcolor)
+                                            padding=25,figdpi=figdpi,colormap=colormap,clim=clim,backgroundcolor=backgroundcolor, colorbar_label=colorbar_label,
+                                            colorbar_label_rotation=colorbar_label_rotation)
     
     if outputimagefile is not None:
         save_image(pixlist_stack,outputimagefile)
@@ -1261,6 +1297,8 @@ def run_montageplot(argv=None):
     colorbar_color=args.colorbar_color
     colorbar_fontsize=args.colorbar_fontsize
     colorbar_location=args.colorbar_location
+    colorbar_label=args.colorbar_label
+    colorbar_label_rotation=args.colorbar_label_rotation
 
     if args.show_cache:
         print_cache('all')
@@ -1397,7 +1435,8 @@ def run_montageplot(argv=None):
         slice_dict=slicedict,mosaic_dict=slicemosaic_dict,slicestack_order=slicedict_order,slice_background_alpha=slice_background_alpha,
         backgroundcolor=bgcolor,no_lookup=no_lookup,create_lookup=create_lookup,
         face_mode=facemode,face_best_mode_iters=bestmodeiters,
-        add_colorbar=add_colorbar, colorbar_color=colorbar_color,colorbar_fontsize=colorbar_fontsize,colorbar_location=colorbar_location)
+        add_colorbar=add_colorbar, colorbar_color=colorbar_color,colorbar_fontsize=colorbar_fontsize,colorbar_location=colorbar_location,
+        colorbar_label=colorbar_label,colorbar_label_rotation=colorbar_label_rotation)
 
 if __name__ == "__main__":
     run_montageplot(sys.argv[1:])
