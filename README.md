@@ -47,6 +47,8 @@ brainmontage
 --colorbarcolor COLORNAME           Colorbar tick+label color. Can change to "white" for dark backgrounds
 --colorbarfontsize FONTSIZE         Font size for colorbar label values
 --colorbarlocation LOCATION         right (default), left, top, bottom
+--colorbartext LABEL                Text for colorbar label
+--colorbartextrotation              Flip colorbar label 180deg
 
 #optional volume slices
 --slices <ax,cor,sag> <slice idx>   List of slice axes names followed by and indices
@@ -117,7 +119,7 @@ img_with_slices=create_montage_figure(roivals,atlasname='fs86',
 #create an image with surface views, upscaled by 2, with a colorbar
 img_with_slices=create_montage_figure(roivals,atlasname='fs86',
     viewnames='all',surftype='infl',clim=[0,86],colormap='magma',
-    upscale_factor=2, face_mode="best", add_colorbar=True,
+    upscale_factor=2, face_mode="best", add_colorbar=True, colorbar_label='my data',
     outputimagefile='mydata_montage_withcolorbar.png')
 
 #Or an image with axial, coronal, and sagittal slices only, and a light gray background
