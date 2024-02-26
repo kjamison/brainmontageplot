@@ -518,7 +518,7 @@ def save_mesh_lookup_file(lookup_surface_name, surftype='infl',viewnames='all',f
     if surftype == 'infl':
         shading_smooth_iters=20
 
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=lookup_surface_name,data_dir=get_data_dir('nilearn'))
+    fsaverage = fetch_surface_dataset(mesh=lookup_surface_name)
     surfbgvalsLR={'left':fsaverage['sulc_left'],'right':fsaverage['sulc_right']}
 
     surfLR={}
@@ -966,13 +966,14 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
 
         if lookup_dict is None and create_lookup:
             print("Creating lookup for %s %s (this may take up to 10 minutes the first time...)" % (lookup_surface_name,surftype))
+            
             lookup_file=save_mesh_lookup_file(lookup_surface_name=lookup_surface_name,surftype=surftype,viewnames='all',shading=True,figdpi=figdpi)
             lookup_dict=loadmat(lookup_file,simplify_cells=True)
 
         if lookup_dict is not None:
             atlasinfo=atlasinfo_lookup
 
-    fsaverage = datasets.fetch_surf_fsaverage(mesh=atlasinfo['annotsurfacename'],data_dir=get_data_dir('nilearn'))
+    fsaverage = fetch_surface_dataset(mesh=atlasinfo['annotsurfacename'])
     surfLR={}
     surfLR['left']=nib.load(fsaverage[surftype+'_'+'left']).agg_data()
     surfLR['right']=nib.load(fsaverage[surftype+'_'+'right']).agg_data()
@@ -1194,11 +1195,27 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
 
     return pixlist_stack
 
+def fetch_surface_dataset(mesh='fsaverage5',data_dir=None):
+    if data_dir is None:
+        data_dir=get_data_dir('nilearn')
+    
+    mesh_info= datasets.fetch_surf_fsaverage(mesh=mesh,data_dir=data_dir)
+    
+    extra_mesh_info={'semi_left':'semi_left.gii.gz','semi_right':'semi_right.gii.gz',
+                     'mid_left':'mid_left.gii.gz','mid_right':'mid_right.gii.gz'}
+    
+    extra_mesh_info={k:os.path.join(get_data_dir('custom_surfaces'),mesh,f) for k,f in extra_mesh_info.items()}
+    for k,f in extra_mesh_info.items():
+        if os.path.exists(f):
+            mesh_info[k]=f
+    return mesh_info
+    
 def get_data_dir(data_type):
     data_paths={'atlas': os.path.join(getscriptdir(),"atlases"),
                 'lookup': os.path.join(getscriptdir(),"lookups"),
                 'facemap': os.path.join(getscriptdir(),"atlas_cache"),
-                'nilearn': os.path.join(getscriptdir(),"nilearn_data")}
+                'nilearn': os.path.join(getscriptdir(),"nilearn_data"),
+                'custom_surfaces': os.path.join(getscriptdir(),"custom_surface_data")}
     
     if data_type in data_paths:
         return data_paths[data_type]
