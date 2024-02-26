@@ -411,7 +411,7 @@ def generate_surface_view_lookup(surf=None,hemi=None,azel=None,figsize=None,figd
                             figure=figure)
 
     #also explicitly set xyz aspect to ensure consistent render scale across installations
-    v.get_axes()[-1].set_box_aspect([1,1,.75])
+    v.get_axes()[-1].set_box_aspect([1,1,.66])
 
     hmesh=v.findobj(lambda obj: isinstance(obj, Poly3DCollection))[0]
 
