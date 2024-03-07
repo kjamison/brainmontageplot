@@ -107,6 +107,17 @@
         "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.HCP_MMP1.label.gii",
         "annotsurface_lookup": "fsaverage"
     },
+    "nsd": {
+        "aliases": ["nsd"],
+        "roicount": 48,
+        "roilut": "%SCRIPTDIR%/atlases/nsd_regions_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/fsaverage5.lh.nsd_regions.label.gii",
+        "rhannot": "%SCRIPTDIR%/atlases/fsaverage5.rh.nsd_regions.label.gii",
+        "annotsurface": "fsaverage5",
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.nsd_regions.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.nsd_regions.label.gii",
+        "annotsurface_lookup": "fsaverage"
+    },
     "cifti91k": {
         "roicount": 91282,
         "roilut": "%SCRIPTDIR%/atlases/cifti91k_RGB_LUT.mat",
