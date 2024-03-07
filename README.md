@@ -8,7 +8,7 @@ Requirements: python3 (<3.11 for now!), nilearn (for main plotting functions), n
 
 [atlas_info.json](brainmontage/atlases/atlas_info.json) contains information about the currently supported atlases to map ROIs to surface vertices.
 * fs86: FreeSurfer Desikan-Killiany 68 cortical gyri + 18 aseg subcortical.
-* fs86sub: Same as fs86, but it projects all of the subcortical structures (except cerebellum) onto the medial wall. See [example](examples/mydata_fs86sub_montage.png)
+* fs86med: Same as fs86, but it projects all of the subcortical structures (except cerebellum) onto the medial wall. See [example](examples/mydata_fs86sub_montage.png)
 * shen268: 268-region cortical+subcortical atlas from [Shen 2013](https://pubmed.ncbi.nlm.nih.gov/23747961/)
 * schaefer100(200,300,400,800): 100-400,800 region cortical atlas from [Schaefer 2018](https://pubmed.ncbi.nlm.nih.gov/28981612/). Uses 7Network order.
 * hcpmmp: 360 region cortical atlas from [Glasser 2016](https://pubmed.ncbi.nlm.nih.gov/27437579/)
@@ -31,7 +31,7 @@ brainmontage
 [--inputvals val1 val2 val3 ...]    provide values for each ROI directly from commmand line
 --views VIEWNAME VIEWNAME ...       choose from: dorsal, lateral, medial, ventral (or none). default: all
 --outputimage OUTPUTIMAGE           image file to save final montage
---surftype SURFTYPE                 choose from: infl, white, pial. default: infl
+--surftype SURFTYPE                 choose from: infl, white, pial, mid, semi (semi-inflated). default: infl
 --colormap CMAPNAME                 colormap name from matplotlib colormaps (or "lut" for RGB from atlas LUT)
 [--cmapfile CMAPFILE]               .txt file with R,G,B values on each line for some colormap 
 --clim MIN MAX                      colormap value range
@@ -89,8 +89,8 @@ brainmontage --input examples/mydata_fs86.mat --inputfield data --atlasname fs86
 
 Example command-line usage: Surface views with LUT ROI colors
 ```
-brainmontage --atlasname fs86sub --colormap lut \
-    --outputimage mydata_fs86_lut_montage.png
+brainmontage --atlasname fs86med --colormap lut \
+    --outputimage mydata_fs86med_lut_montage.png
 ```
 
 Example python function usage:
