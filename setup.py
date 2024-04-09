@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 with open('requirements.txt') as f:
-    required = f.read().splitlines()
+    required = [r for r in f.read().splitlines() if not r.startswith("#")]
 
 with open('brainmontage/_version.py') as f:
     version=f.readline().split("=")[-1].split()[-1].replace("'","")
@@ -28,5 +28,5 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.5,<3.11',
+    python_requires='>=3.5',
 )
