@@ -873,10 +873,10 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         viewnames=['dorsal','lateral','medial','ventral','anterior','posterior']
     
     try:
-        viewnames=stringfromlist(viewnames,['none','dorsal','lateral','medial','ventral','anterior','posterior'])
+        viewnames=stringfromlist(viewnames,['none','dorsal','lateral','medial','ventral','anterior','posterior','flat'])
     except:
-        raise Exception("Viewname must be one of: none, dorsal, lateral, medial, ventral, anterior, posterior")
-
+        raise Exception("Viewname must be one of: none, dorsal, lateral, medial, ventral, anterior, posterior, flat")
+    
     if atlasname is not None and atlasinfo is None:
         atlasinfo=retrieve_atlas_info(atlasname)
     
@@ -1202,7 +1202,8 @@ def fetch_surface_dataset(mesh='fsaverage5',data_dir=None):
     mesh_info= datasets.fetch_surf_fsaverage(mesh=mesh,data_dir=data_dir)
     
     extra_mesh_info={'semi_left':'semi_left.gii.gz','semi_right':'semi_right.gii.gz',
-                     'mid_left':'mid_left.gii.gz','mid_right':'mid_right.gii.gz'}
+                     'mid_left':'mid_left.gii.gz','mid_right':'mid_right.gii.gz',
+                     'flat_left':'flat_left.gii.gz','flat_right':'flat_right.gii.gz'}
     
     extra_mesh_info={k:os.path.join(get_data_dir('custom_surfaces'),mesh,f) for k,f in extra_mesh_info.items()}
     for k,f in extra_mesh_info.items():
@@ -1407,7 +1408,7 @@ def run_montageplot(argv=None):
         atlas_info={'atlasname':None,'roilutfile':roilutfile,'lhannotfile':lhannotfile,'rhannotfile':rhannotfile,
             'annotsurfacename':annotsurfacename,'lhannotprefix':lhannotprefix,'rhannotprefix':rhannotprefix,'subcorticalvolume':subcortvolfile}
     
-    surftype_allowed=['white','inflated','pial']
+    surftype_allowed=['white','inflated','pial','semi','mid','flat']
     try:
         surftype=stringfromlist(surftype,surftype_allowed)
         if surftype == 'inflated':

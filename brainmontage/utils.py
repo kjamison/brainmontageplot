@@ -44,12 +44,18 @@ def get_view_azel(hemi,viewname):
     view_azel={}
     view_azel['left']={'dorsal':[180,90],'lateral':[180,0], 'medial':[0,0], 'ventral':[0,-90],'anterior':[90,0],'posterior':[-90,0]}
     view_azel['right']={'dorsal':[0,90],'lateral':[0,0], 'medial':[180,0], 'ventral':[180,-90],'anterior':[90,0],'posterior':[-90,0]}
+    view_azel['left']['flat']=[-90,90]
+    view_azel['right']['flat']=[-100,90]
+    
     return view_azel[hemi][viewname]
 
 def get_light_dir(hemi,viewname):
     view_lightdir={}
     view_lightdir['left']={'dorsal':[0,0,1],'lateral':[-1,0,0],'medial':[1,0,0],'ventral':[0,0,-1],'anterior':[0,1,0],'posterior':[0,-1,0]}
     view_lightdir['right']={'dorsal':[0,0,1],'lateral':[1,0,0],'medial':[-1,0,0],'ventral':[0,0,-1],'anterior':[0,1,0],'posterior':[0,-1,0]}
+    view_lightdir['left']['flat']=[0,0,1]
+    view_lightdir['right']['flat']=[0,0,1]
+    
     return view_lightdir[hemi][viewname]
 
 def cropbg(img,bgcolor=None,return_bbox=True,cropcoord=None):

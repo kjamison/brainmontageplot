@@ -5,4 +5,5 @@ atlas_cache/
 .idea/
 .ipynb_checkpoints/
 __pycache__/
-
+*.egg-info
+build/
