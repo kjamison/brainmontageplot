@@ -1205,6 +1205,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         bgvolvals=np.flip(bgvolvals,ax_to_flip)
         bgmaskvals=np.flip(bgmaskvals,ax_to_flip)
         volvals=np.flip(volvals,ax_to_flip)
+        volvals_roiindex=np.flip(volvals_roiindex,ax_to_flip)
         
         bgvol_cmap=plt.get_cmap("gray")
         if colormap is None or isinstance(colormap,str):
