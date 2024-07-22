@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from datetime import datetime
+from PIL import Image, ImageFilter
 
 from matplotlib import use as matplotlib_set_backend
 from matplotlib import get_backend as matplotlib_get_backend
@@ -573,7 +574,7 @@ def save_mesh_lookup_file(lookup_surface_name, surftype='infl',viewnames='all',f
 
     return lookup_file
 
-def render_surface_lookup(roivals,lookup,cmap='magma',clim=None,backgroundcolor=None,shading=True,braincolor=None):
+def render_surface_lookup(roivals,lookup,cmap='magma',clim=None,backgroundcolor=None,shading=True,braincolor=None, borderimage=None, bordercolor='black',borderwidth=1):
     if backgroundcolor is None:
         backgroundcolor=[0,0,0]
 
@@ -597,9 +598,30 @@ def render_surface_lookup(roivals,lookup,cmap='magma',clim=None,backgroundcolor=
             braincolor='gray'
         brainbg_cmap=ListedColormap(braincolor)
         brainbg_rgb=brainbg_cmap(np.ones(roiimg.shape))
-
+    
     imgnonzero=np.atleast_3d(np.logical_and(lookup['roinonzero'],np.logical_not(np.isnan(roiimg))).astype(float))
     
+    ###############
+    if borderimage is not None:
+        #perform gaussian blur on border image
+        if borderwidth>0:
+            border_edgefilter_gauss=ImageFilter.GaussianBlur(radius=borderwidth)
+            borderimage=Image.fromarray(borderimage).convert("L").filter(border_edgefilter_gauss)
+            borderimage=np.asarray(borderimage)
+            if np.any(borderimage>1):
+                borderimage=np.clip(borderimage/255,0,.01)/.01
+            else:
+                borderimage=np.clip(borderimage,0,.01)/.01
+        borderimage=np.atleast_3d(borderimage)
+        #make a blank image that is just the desired color at every pixel
+        border_cmap=ListedColormap(bordercolor)
+        rgbborder=val2rgb(np.ones(borderimage.shape[:2]),border_cmap,[0,1])
+        rgbborder[:,:,3]=1
+        #rgbborder=np.uint8(rgbborder)
+        
+        roiimg_rgb=np.clip(roiimg_rgb*(1-borderimage)+rgbborder*borderimage,0,1)
+        
+    ###############
     roiimg_rgb=roiimg_rgb*imgnonzero + brainbg_rgb*(1-imgnonzero)
     
     imgalpha=np.atleast_3d(lookup['mask'])
@@ -726,7 +748,8 @@ def render_surface_view(surfvals,surf,azel=None,surfbgvals=None,shading=True,lig
             pix[:,:,3]=pixalpha
     return pix
 
-def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mosaic,cmap,clim,bg_cmap,blank_cmap,background_alpha=1):
+def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mosaic,cmap,clim,bg_cmap,blank_cmap,background_alpha=1,
+                        borderimage=None,bordercolor='black',borderwidth=1):
     imgslice,mosiacinfo=vol2mosaic(volvals, sliceaxis=sliceaxis, slice_indices=slice_indices, mosaic=mosaic,extra_slice_val=np.nan)
     imgslice_brainbg,_=vol2mosaic(bgvolvals,sliceaxis=sliceaxis,slice_indices=mosiacinfo['slice_indices'],mosaic=mosiacinfo['mosaic'])
     imgslice_brainmask,_=vol2mosaic(bgmaskvals,sliceaxis=sliceaxis,slice_indices=mosiacinfo['slice_indices'],mosaic=mosiacinfo['mosaic'])
@@ -740,6 +763,25 @@ def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mos
     #now mix data volume
     rgbslice=rgbslice_background*(1-imgslice_alpha)+rgbslice*(imgslice_alpha)
 
+    if borderimage is not None:
+        #perform gaussian blur on border image
+        if borderwidth>0:
+            border_edgefilter_gauss=ImageFilter.GaussianBlur(radius=borderwidth)
+            borderimage=Image.fromarray(borderimage).convert("L").filter(border_edgefilter_gauss)
+            borderimage=np.asarray(borderimage)
+            if np.any(borderimage>1):
+                borderimage=np.clip(borderimage/255,0,.01)/.01
+            else:
+                borderimage=np.clip(borderimage,0,.01)/.01
+        borderimage=np.atleast_3d(borderimage)
+        #make a blank image that is just the desired color at every pixel
+        border_cmap=ListedColormap(bordercolor)
+        rgbborder=val2rgb(np.ones(borderimage.shape[:2]),border_cmap,[0,1])
+        rgbborder[:,:,3]=1
+        #rgbborder=np.uint8(rgbborder)
+        
+        rgbslice=np.clip(rgbslice*(1-borderimage)+rgbborder*borderimage,0,1)
+        
     return rgbslice
 
 def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorbar_location=None,colorbar_label=None,colorbar_label_rotation=False,padding=None,figdpi=None,colormap=None,clim=None,backgroundcolor=None):
@@ -847,14 +889,18 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=1, backgroundcolor="white",
     slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal', slice_background_alpha=1,
     outputimagefile=None, figdpi=200, no_lookup=False, create_lookup=False,face_mode='mode',face_best_mode_iters=5,
-    add_colorbar=False, colorbar_color=None, colorbar_fontsize=None,colorbar_location='right',colorbar_label=None, colorbar_label_rotation=False):
+    add_colorbar=False, colorbar_color=None, colorbar_fontsize=None,colorbar_location='right',colorbar_label=None, colorbar_label_rotation=False,
+    border_roimask=None, border_color='black',border_width=1):
 
     #default factor=1 is way too big in general, so for surface views scale this down by 25%
     surface_scale_factor=upscale_factor*.25
     #for slice views with surface, we just scale to match surface view
     #but for slice-only, use the upscale_factor argument (as-is, scale=1 is fine for slice-only)
     slice_only_scale_factor=upscale_factor
-
+    
+    border_scale_factor=.5 #border=1 is a good number, but we should scale that to draw at 0.5
+    border_width=border_width*border_scale_factor
+    
     try:
         colormap=stringfromlist(colormap,list(plt.colormaps.keys()),allow_startswith=False)
     except:
@@ -983,6 +1029,19 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     pixlist_hemi=[]
     pixlist_view=[]
 
+
+    if border_roimask is not None and len(border_roimask)!=len(roivals):
+        raise Exception("Border roimask must be same length as roivals")
+    
+    if border_roimask is not None:
+        print("Rendering ROI borders for %d/%d ROIs. This might slow down rendering." % (np.sum(border_roimask>0),len(roivals)))
+    
+    #for rendering ROI borders
+    border_bgcolor=[0,0,0]
+    border_colormap=ListedColormap([[0,0,0],[1,1,1]])
+    border_clim=[0,1]
+    border_edgefilter=ImageFilter.Kernel((3,3),(-1, -1, -1, -1, 8,-1, -1, -1, -1), 1, 0)
+    
     if lookup_dict is not None:
         #first map roi indices to surface vertices
         #then map those roi indices to to faces
@@ -991,6 +1050,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         faceroisLR=map_vertices_to_faces(surfLR=surfLR,surfvalsLR=surfroisLR,
                                          face_mode=face_mode,face_best_mode_iters=face_best_mode_iters,
                                          atlasinfo=atlasinfo)
+
         facevalsLR={}
         for h in ['left','right']:
             m_notnan=np.logical_not(np.isnan(faceroisLR[h]))
@@ -1003,8 +1063,33 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
                     continue
 
                 viewkey="%s_%s" % (h,viewname)
+                
+                #########
+                #render ROI borders
+                roi_edge_mask=None
+                if border_roimask is not None:
+                    for r,rmask in enumerate(border_roimask):
+                        if rmask==0 or not np.any(faceroisLR[h]==r):
+                            #ROI is not contained in this cortical hemisphere
+                            continue
+                        
+                        pix_roi=render_surface_lookup(faceroisLR[h]==r,lookup_dict[viewkey],cmap=border_colormap,clim=border_clim,
+                                                backgroundcolor=border_bgcolor,shading=False,braincolor=None)
+                        
+                        if np.min(pix_roi[:,:,0])==np.max(pix_roi[:,:,0]):
+                            #ROI is not shown in this view
+                            continue
+                        
+                        pix_edge=Image.fromarray(pix_roi).convert("L").filter(border_edgefilter)
+                        pix_edge=np.asarray(pix_edge)
+                        if roi_edge_mask is None:
+                            roi_edge_mask=pix_edge
+                        else:
+                            roi_edge_mask=np.maximum(roi_edge_mask,pix_edge)
+                ##########
                 pix=render_surface_lookup(facevalsLR[h],lookup_dict[viewkey],cmap=colormap,clim=clim_rescaled,
-                                          backgroundcolor=backgroundcolor,shading=shading,braincolor=None)
+                            backgroundcolor=backgroundcolor,shading=shading,braincolor=None,
+                            borderimage=roi_edge_mask,bordercolor=border_color, borderwidth=border_width/surface_scale_factor)
 
                 pix=padimage(pix,bgcolor=None,padamount=1)
 
@@ -1100,6 +1185,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     bgvolfile="%s/MNI152_T1_1mm_headmasked.nii.gz" % (get_data_dir('atlas'))
     bgmaskfile="%s/MNI152_T1_1mm_headmask.nii.gz" % (get_data_dir('atlas'))
     volvals=None
+    volvals_roiindex=None
     bgvolvals=None
     slicevol_cmap=None
     bgvol_cmap=None
@@ -1112,7 +1198,8 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         bgvolvals=refnib.get_fdata()
         bgmaskvals=np.clip(masknib.get_fdata(),0,1)
         volvals=fill_volume_rois(roivals,atlasinfo,backgroundval=np.nan,referencevolume=refnib)
-
+        volvals_roiindex=fill_volume_rois(np.arange(len(roivals)),atlasinfo,backgroundval=np.nan,referencevolume=refnib)
+        
         #quick (and dirty) test for ax flipping (ex: MNI reference volume is [-1,1,1])
         ax_to_flip=np.where(np.diag(refnib.affine)[:3]<0)[0]
         bgvolvals=np.flip(bgvolvals,ax_to_flip)
@@ -1132,8 +1219,34 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
             continue
         if not a in mosaic_dict:
             mosaic_dict[a]=None
+        
+        #########
+        #render ROI borders
+        roi_edge_mask=None
+        if border_roimask is not None:
+            for r,rmask in enumerate(border_roimask):
+                if rmask==0 or not np.any(volvals_roiindex==r):
+                    #ROI is not contained in this volume
+                    continue
+                
+                pix_roi=slice_volume_to_rgb(volvals_roiindex==r,bgvolvals=bgvolvals,bgmaskvals=bgmaskvals,sliceaxis=sliceax[a],slice_indices=slice_dict[a],mosaic=mosaic_dict[a],
+                                                   cmap=border_colormap,clim=border_clim,bg_cmap=bgvol_cmap,blank_cmap=blank_cmap, background_alpha=0)
+                
+                if np.min(pix_roi[:,:,0])==np.max(pix_roi[:,:,0]):
+                    #ROI is not shown in this view
+                    continue
+                
+                pix_edge=Image.fromarray(np.round(pix_roi*255).astype(np.uint8)).convert("L").filter(border_edgefilter)
+                pix_edge=np.asarray(pix_edge)>1e-6
+                if roi_edge_mask is None:
+                    roi_edge_mask=pix_edge
+                else:
+                    roi_edge_mask=np.maximum(roi_edge_mask,pix_edge)
+        ##########
+        
         imgslice_dict[a]=slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis=sliceax[a],slice_indices=slice_dict[a],mosaic=mosaic_dict[a],
-                                                   cmap=slicevol_cmap,clim=clim,bg_cmap=bgvol_cmap,blank_cmap=blank_cmap, background_alpha=slice_background_alpha)
+                                                   cmap=slicevol_cmap,clim=clim,bg_cmap=bgvol_cmap,blank_cmap=blank_cmap, background_alpha=slice_background_alpha,
+                                                   borderimage=roi_edge_mask,bordercolor=border_color,borderwidth=border_width)
 
     #order slice axes were given
     imgslice_list=[imgslice_dict[k] for k in slicestack_order if k in imgslice_dict]
