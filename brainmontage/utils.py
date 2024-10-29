@@ -147,7 +147,7 @@ def val2rgb(v, cmap, clim=None):
     return cmap(v)
 
     
-def vol2mosaic(V, sliceaxis=2, slice_indices=None, mosaic=None,extra_slice_val=0):
+def vol2mosaic(V, sliceaxis=2, slice_indices=None, mosaic=None,extra_slice_val=0, slice_zoom_factor=None, slice_zoom_box=None):
     if len(slice_indices) == 0:
         return None, None
     
@@ -179,9 +179,23 @@ def vol2mosaic(V, sliceaxis=2, slice_indices=None, mosaic=None,extra_slice_val=0
         V_extra=extra_slice_val*np.ones((V.shape[0],V.shape[1],numslices_mosaic-numslices))
         V=np.concatenate((V,V_extra),axis=2)
 
+    if slice_zoom_box is not None:
+        zoombox=slice_zoom_box
+    elif slice_zoom_factor is None or slice_zoom_factor==1:
+        zoombox=[0,V.shape[0], 0, V.shape[1]]
+    else:
+        slicecenter=[x//2 for x in V.shape[:2]]
+        xnew=[slicecenter[0]-.5*V.shape[0]/slice_zoom_factor, slicecenter[0]+.5*V.shape[0]/slice_zoom_factor]
+        ynew=[slicecenter[1]-.5*V.shape[1]/slice_zoom_factor, slicecenter[1]+.5*V.shape[1]/slice_zoom_factor]
+        xnew=[int(max(0,xnew[0])), int(min(V.shape[0],xnew[1]))]
+        ynew=[int(max(0,ynew[0])), int(min(V.shape[1],ynew[1]))]
+        zoombox=[xnew[0],xnew[1],ynew[0],ynew[1]]
+        
+    V=V[zoombox[0]:zoombox[1],zoombox[2]:zoombox[3],:]
+        
     Vmosaic=np.hstack([np.vstack([V[:,:,mosaic[1]*i+x] for x in range(mosaic[1])]) for i in range(mosaic[0])])
 
-    mosaic_info={"sliceaxis":sliceaxis,"slice_indices":slice_indices,"mosaic":mosaic}
+    mosaic_info={"sliceaxis":sliceaxis,"slice_indices":slice_indices,"mosaic":mosaic, "slice_zoom_box":zoombox}
     return Vmosaic,mosaic_info
 
 def mesh_diffuse(verts=None,faces=None,surf=None,adjacency=None,vertvals=None,iters=1):

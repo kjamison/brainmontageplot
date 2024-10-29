@@ -59,6 +59,7 @@ def parse_argument_montageplot(argv):
     slice_arg_group.add_argument('--sagmosaic',action='store',dest='sagmosaic',type=int,nargs=2,help="NUMROW NUMCOL for SAGITTAL slices")
     slice_arg_group.add_argument('--stackdir',action='store',dest='stackdirection',default='horizontal',help='Stack surf+slices horizontal or vertical')
     slice_arg_group.add_argument('--slicebgalpha',action='store',dest='slice_background_alpha',type=float,default=1,help='Opacity of slice background volume')
+    slice_arg_group.add_argument('--slicezoom',action='store',dest='slice_zoom',type=float,default=1,help='Zoom in on slice images (and crop. 1=no zoom. Valid > 1)')
 
     atlasname_arg_group=parser.add_argument_group('Atlas option 1: atlas name')
     atlasname_arg_group.add_argument('--atlasname',action='store',dest='atlasname')
@@ -749,10 +750,11 @@ def render_surface_view(surfvals,surf,azel=None,surfbgvals=None,shading=True,lig
     return pix
 
 def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mosaic,cmap,clim,bg_cmap,blank_cmap,background_alpha=1,
-                        borderimage=None,bordercolor='black',borderwidth=1):
-    imgslice,mosiacinfo=vol2mosaic(volvals, sliceaxis=sliceaxis, slice_indices=slice_indices, mosaic=mosaic,extra_slice_val=np.nan)
-    imgslice_brainbg,_=vol2mosaic(bgvolvals,sliceaxis=sliceaxis,slice_indices=mosiacinfo['slice_indices'],mosaic=mosiacinfo['mosaic'])
-    imgslice_brainmask,_=vol2mosaic(bgmaskvals,sliceaxis=sliceaxis,slice_indices=mosiacinfo['slice_indices'],mosaic=mosiacinfo['mosaic'])
+                        borderimage=None,bordercolor='black',borderwidth=1, slice_zoom=None):
+    imgslice,mosaicinfo=vol2mosaic(volvals, sliceaxis=sliceaxis, slice_indices=slice_indices, mosaic=mosaic,extra_slice_val=np.nan, slice_zoom_factor=slice_zoom)
+    imgslice_brainbg,_=vol2mosaic(bgvolvals,sliceaxis=sliceaxis,slice_indices=mosaicinfo['slice_indices'],mosaic=mosaicinfo['mosaic'], slice_zoom_box=mosaicinfo['slice_zoom_box'])
+    imgslice_brainmask,_=vol2mosaic(bgmaskvals,sliceaxis=sliceaxis,slice_indices=mosaicinfo['slice_indices'],mosaic=mosaicinfo['mosaic'], slice_zoom_box=mosaicinfo['slice_zoom_box'])
+        
     rgbslice=val2rgb(imgslice,cmap,clim)
     rgbslice_brainbg=val2rgb(imgslice_brainbg,bg_cmap)
     rgbblank=val2rgb(np.zeros(imgslice.shape),blank_cmap,[0,1])
@@ -762,6 +764,7 @@ def slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis,slice_indices,mos
     rgbslice_background=rgbblank*(1-imgslice_brainmask*background_alpha)+rgbslice_brainbg*(imgslice_brainmask*background_alpha)
     #now mix data volume
     rgbslice=rgbslice_background*(1-imgslice_alpha)+rgbslice*(imgslice_alpha)
+
 
     if borderimage is not None:
         #perform gaussian blur on border image
@@ -887,7 +890,7 @@ def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorba
 def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     roilutfile=None,lhannotfile=None,rhannotfile=None,annotsurfacename='fsaverage5',lhannotprefix=None, rhannotprefix=None, subcorticalvolume=None,
     viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=1, backgroundcolor="white",
-    slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal', slice_background_alpha=1,
+    slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal', slice_background_alpha=1, slice_zoom=None,
     outputimagefile=None, figdpi=200, no_lookup=False, create_lookup=False,face_mode='mode',face_best_mode_iters=5,
     add_colorbar=False, colorbar_color=None, colorbar_fontsize=None,colorbar_location='right',colorbar_label=None, colorbar_label_rotation=False,
     border_roimask=None, border_color='black',border_width=1):
@@ -1244,8 +1247,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
                 else:
                     roi_edge_mask=np.maximum(roi_edge_mask,pix_edge)
         ##########
-        
-        imgslice_dict[a]=slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis=sliceax[a],slice_indices=slice_dict[a],mosaic=mosaic_dict[a],
+        imgslice_dict[a]=slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis=sliceax[a],slice_indices=slice_dict[a],mosaic=mosaic_dict[a], slice_zoom=slice_zoom,
                                                    cmap=slicevol_cmap,clim=clim,bg_cmap=bgvol_cmap,blank_cmap=blank_cmap, background_alpha=slice_background_alpha,
                                                    borderimage=roi_edge_mask,bordercolor=border_color,borderwidth=border_width)
 
@@ -1261,9 +1263,8 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     for imgslice in imgslice_list:
         imgslice=np.uint8(np.clip(np.round(imgslice.astype(np.float32)*255),0,255))
         imgslice=Image.fromarray(imgslice)
-        
+            
         if current_image_size is None:
-
             current_image_size=imgslice.size
             #if no surface views, apply upscale factor to volume slices directly
             current_image_size=[int(round(x*slice_only_scale_factor)) for x in current_image_size]
@@ -1424,7 +1425,8 @@ def run_montageplot(argv=None):
     stackdirection=args.stackdirection
     slicedict_order=None
     slice_background_alpha=args.slice_background_alpha
-
+    slice_zoom=args.slice_zoom
+    
     add_colorbar=args.colorbar
     colorbar_color=args.colorbar_color
     colorbar_fontsize=args.colorbar_fontsize
@@ -1565,6 +1567,7 @@ def run_montageplot(argv=None):
         viewnames=viewnames,surftype=surftype,clim=clim,colormap=cmap,noshading=no_shading,
         outputimagefile=outputimage,upscale_factor=upscale_factor,slicestack_direction=stackdirection,
         slice_dict=slicedict,mosaic_dict=slicemosaic_dict,slicestack_order=slicedict_order,slice_background_alpha=slice_background_alpha,
+        slice_zoom=slice_zoom,
         backgroundcolor=bgcolor,no_lookup=no_lookup,create_lookup=create_lookup,
         face_mode=facemode,face_best_mode_iters=bestmodeiters,
         add_colorbar=add_colorbar, colorbar_color=colorbar_color,colorbar_fontsize=colorbar_fontsize,colorbar_location=colorbar_location,
