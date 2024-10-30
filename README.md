@@ -60,6 +60,7 @@ brainmontage
 --sagmosaic ROWS COLS                * One of ROWS or COLS can be -1
 --stackdir <[horizontal],vertical>  should slice mosaics be stacked horizontal or vertical (surface views always vertical)
 --slicebgalpha ALPHAVAL             opacity value for brain slice background volume (default=1)
+--slicezoom ZOOMVAL                 Zoom (and crop) volume slices (range >=1. default=1)
 
 # atlas info option 1:
 [--atlasname ATLASNAME]             atlas name for entry in atlas_info.json
