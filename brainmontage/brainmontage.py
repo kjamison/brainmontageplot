@@ -1234,14 +1234,19 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
                     continue
                 
                 pix_roi=slice_volume_to_rgb(volvals_roiindex==r,bgvolvals=bgvolvals,bgmaskvals=bgmaskvals,sliceaxis=sliceax[a],slice_indices=slice_dict[a],mosaic=mosaic_dict[a],
-                                                   cmap=border_colormap,clim=border_clim,bg_cmap=bgvol_cmap,blank_cmap=blank_cmap, background_alpha=0)
+                                                   cmap=border_colormap,clim=border_clim,bg_cmap=bgvol_cmap,blank_cmap=blank_cmap, background_alpha=0, slice_zoom=slice_zoom)
                 
                 if np.min(pix_roi[:,:,0])==np.max(pix_roi[:,:,0]):
                     #ROI is not shown in this view
                     continue
                 
+                edgepad=1
+                if edgepad > 0:
+                    pix_roi=np.pad(pix_roi,([edgepad,edgepad],[edgepad,edgepad],[0,0]),constant_values=1) #pad array to avoid marking edges as border
                 pix_edge=Image.fromarray(np.round(pix_roi*255).astype(np.uint8)).convert("L").filter(border_edgefilter)
                 pix_edge=np.asarray(pix_edge)>1e-6
+                if edgepad > 0:
+                    pix_edge=pix_edge[edgepad:-edgepad,edgepad:-edgepad] #remove padding
                 if roi_edge_mask is None:
                     roi_edge_mask=pix_edge
                 else:
@@ -1249,7 +1254,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         ##########
         imgslice_dict[a]=slice_volume_to_rgb(volvals,bgvolvals,bgmaskvals,sliceaxis=sliceax[a],slice_indices=slice_dict[a],mosaic=mosaic_dict[a], slice_zoom=slice_zoom,
                                                    cmap=slicevol_cmap,clim=clim,bg_cmap=bgvol_cmap,blank_cmap=blank_cmap, background_alpha=slice_background_alpha,
-                                                   borderimage=roi_edge_mask,bordercolor=border_color,borderwidth=border_width)
+                                                   borderimage=roi_edge_mask,bordercolor=border_color,borderwidth=border_width/slice_zoom)
 
     #order slice axes were given
     imgslice_list=[imgslice_dict[k] for k in slicestack_order if k in imgslice_dict]
