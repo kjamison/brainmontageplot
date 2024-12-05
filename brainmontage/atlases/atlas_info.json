@@ -118,6 +118,26 @@
         "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.nsd_regions.label.gii",
         "annotsurface_lookup": "fsaverage"
     },
+    "yeo7": {
+        "roicount": 7,
+        "roilut": "%SCRIPTDIR%/atlases/yeo7_networknames_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/lh.Yeo2011_7Networks.label.gii",
+        "rhannot": "%SCRIPTDIR%/atlases/rh.Yeo2011_7Networks.label.gii",
+        "annotsurface": "fsaverage",
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/lh.Yeo2011_7Networks.label.gii",
+        "rhannot_lookup":  "%SCRIPTDIR%/atlases/rh.Yeo2011_7Networks.label.gii",
+        "annotsurface_lookup": "fsaverage"
+    },
+    "yeo17": {
+        "roicount": 17,
+        "roilut": "%SCRIPTDIR%/atlases/yeo17_networknames_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/lh.Yeo2011_17Networks.label.gii",
+        "rhannot": "%SCRIPTDIR%/atlases/rh.Yeo2011_17Networks.label.gii",
+        "annotsurface": "fsaverage",
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/lh.Yeo2011_17Networks.label.gii",
+        "rhannot_lookup":  "%SCRIPTDIR%/atlases/rh.Yeo2011_17Networks.label.gii",
+        "annotsurface_lookup": "fsaverage"
+    },
     "cifti91k": {
         "roicount": 91282,
         "roilut": "%SCRIPTDIR%/atlases/cifti91k_RGB_LUT.mat",
@@ -128,5 +148,5 @@
         "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.cifti91k.shape.gii",
         "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.cifti91k.shape.gii",
         "annotsurface_lookup": "fsaverage"
-    }    
+    }
 }
