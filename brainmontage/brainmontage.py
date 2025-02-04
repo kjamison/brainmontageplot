@@ -904,6 +904,9 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     border_scale_factor=.5 #border=1 is a good number, but we should scale that to draw at 0.5
     border_width=border_width*border_scale_factor
     
+    if slice_zoom is None:
+        slice_zoom=1
+    
     try:
         colormap=stringfromlist(colormap,list(plt.colormaps.keys()),allow_startswith=False)
     except:
