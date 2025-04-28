@@ -29,7 +29,7 @@ brainmontage
 [--input INPUTFILE]                 file with value for each ROI. Can be .txt or .mat
 [--inputfield INPUTFIELDNAME]       for .mat input with multiple variables, which variable name to use
 [--inputvals val1 val2 val3 ...]    provide values for each ROI directly from commmand line
---views VIEWNAME VIEWNAME ...       choose from: dorsal, lateral, medial, ventral (or none). default: all
+--views VIEWNAME VIEWNAME ...       choose from: dorsal, lateral, medial, ventral, anterior, posterior (or none). default: all
 --outputimage OUTPUTIMAGE           image file to save final montage
 --surftype SURFTYPE                 choose from: infl, white, pial, mid, semi (semi-inflated). default: infl
 --colormap CMAPNAME                 colormap name from matplotlib colormaps (or "lut" for RGB from atlas LUT)

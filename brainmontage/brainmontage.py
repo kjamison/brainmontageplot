@@ -35,7 +35,7 @@ def parse_argument_montageplot(argv):
     parser=argparse.ArgumentParser(description='Save surface ROI and/or volume slice montage',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--outputimage',action='store',dest='outputimage',help='Filename for output image')
-    parser.add_argument('--views',action='append',dest='viewnames',nargs='*',help='list of: dorsal, ventral, medial, lateral, or none')
+    parser.add_argument('--views',action='append',dest='viewnames',nargs='*',help='list of: dorsal, ventral, medial, lateral, anterior, posterior, or none')
     parser.add_argument('--surftype',action='store',dest='surftype',default='infl',help='inflated, white, pial')
     parser.add_argument('--cmap','--colormap',action='store',dest='cmapname',default='magma')
     parser.add_argument('--cmapfile','--colormapfile',action='store',dest='cmapfile')
