@@ -1164,7 +1164,27 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
                 #set hemi to blank for the remaining entries so they are left out of pixlist_left/right below
                 pixlist_hemi[idx_left_post[0]]=[]
                 pixlist_hemi[idx_right_post[0]]=[]
-                
+        
+        elif ( (all([x=='dorsal' for x in pixlist_view]) or all([x=='ventral' for x in pixlist_view])) 
+            and "left" in pixlist_hemi and "right" in pixlist_hemi):
+            #special case when it is ONLY dorsal or ONLY ventral
+            dors_vent=pixlist_view[0]
+            idx_left_dv=[i for i,x in enumerate(pixlist) if pixlist_hemi[i]+pixlist_view[i]=='left'+dors_vent]
+            idx_right_dv=[i for i,x in enumerate(pixlist) if pixlist_hemi[i]+pixlist_view[i]=='right'+dors_vent]
+            if all([len(x)==1 for x in [idx_left_dv,idx_right_dv]]):
+                if dors_vent == 'dorsal':
+                    pix_left_dv=np.flip(np.transpose(pixlist[idx_left_dv[0]],[1,0,2]),1)
+                    pix_right_dv=np.flip(np.transpose(pixlist[idx_right_dv[0]],[1,0,2]),0)
+                    [pix_left_dv,pix_right_dv]=pad_to_max_height([pix_left_dv,pix_right_dv])
+                    pixlist[idx_left_dv[0]]=pix_left_dv
+                    pixlist[idx_right_dv[0]]=pix_right_dv
+                elif dors_vent == 'ventral':
+                    pix_left_dv=np.flip(np.transpose(pixlist[idx_left_dv[0]],[1,0,2]),0)
+                    pix_right_dv=np.flip(np.transpose(pixlist[idx_right_dv[0]],[1,0,2]),1)
+                    [pix_left_dv,pix_right_dv]=pad_to_max_height([pix_left_dv,pix_right_dv])
+                    #swap hemis so they display correctly from underneath
+                    pixlist[idx_left_dv[0]]=pix_right_dv
+                    pixlist[idx_right_dv[0]]=pix_left_dv
 
         #wmax=max([x.shape[1] for x in pixlist])
         #pixlist=[padimage(x,bgcolor=None,padfinalsize=[-1,wmax]) for x in pixlist]
