@@ -37,6 +37,7 @@ def parse_argument_montageplot(argv):
     parser.add_argument('--outputimage',action='store',dest='outputimage',help='Filename for output image')
     parser.add_argument('--views',action='append',dest='viewnames',nargs='*',help='list of: dorsal, ventral, medial, lateral, anterior, posterior, or none')
     parser.add_argument('--surftype',action='store',dest='surftype',default='infl',help='inflated, white, pial')
+    parser.add_argument('--hemis',action='append',dest='hemis',nargs='*',help='left, right, or both (default)')
     parser.add_argument('--cmap','--colormap',action='store',dest='cmapname',default='magma')
     parser.add_argument('--cmapfile','--colormapfile',action='store',dest='cmapfile')
     parser.add_argument('--clim', action='append',dest='clim',nargs=2)
@@ -889,7 +890,7 @@ def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorba
     
 def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     roilutfile=None,lhannotfile=None,rhannotfile=None,annotsurfacename='fsaverage5',lhannotprefix=None, rhannotprefix=None, subcorticalvolume=None,
-    viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=1, backgroundcolor="white",
+    viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=1, backgroundcolor="white", hemis='both', 
     slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal', slice_background_alpha=1, slice_zoom=None,
     outputimagefile=None, figdpi=200, no_lookup=False, create_lookup=False,face_mode='mode',face_best_mode_iters=5,
     add_colorbar=False, colorbar_color=None, colorbar_fontsize=None,colorbar_location='right',colorbar_label=None, colorbar_label_rotation=False,
@@ -928,6 +929,23 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         viewnames=stringfromlist(viewnames,['none','dorsal','lateral','medial','ventral','anterior','posterior','flat'])
     except:
         raise Exception("Viewname must be one of: none, dorsal, lateral, medial, ventral, anterior, posterior, flat")
+    
+    if isinstance(hemis,str):
+        hemis=[hemis.lower()]
+    elif hemis is None:
+        hemis=['left','right']
+    else:
+        hemis=[h.lower() for h in hemis]
+    if 'both' in hemis or 'all' in hemis:
+        hemis=['left','right']
+    for ih,h in enumerate(hemis):
+        if h == 'l' or h == 'lh':
+            h='left'
+        elif h == 'r' or h == 'rh':
+            h='right'
+        if h not in ['left','right']:
+            raise Exception("Hemisphere must be one of: left, right, both. Found: %s" % (h))
+        hemis[ih]=h
     
     if atlasname is not None and atlasinfo is None:
         atlasinfo=retrieve_atlas_info(atlasname)
@@ -1058,12 +1076,12 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
                                          atlasinfo=atlasinfo)
 
         facevalsLR={}
-        for h in ['left','right']:
+        for h in hemis:
             m_notnan=np.logical_not(np.isnan(faceroisLR[h]))
             facevalsLR[h]=np.ones(faceroisLR[h].shape)*np.nan
             facevalsLR[h][m_notnan]=roivals_rescaled[faceroisLR[h][m_notnan].astype(int)]
 
-        for ih,h in enumerate(['left','right']):
+        for ih,h in enumerate(hemis):
             for iv,viewname in enumerate(viewnames):
                 if viewname == 'none':
                     continue
@@ -1122,7 +1140,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         figsize=[x*surface_scale_factor for x in figsize]
         fig.set_size_inches(figsize)
 
-        for ih,h in enumerate(['left','right']):
+        for ih,h in enumerate(hemis):
             for iv, viewname in enumerate(viewnames):
                 if viewname == 'none':
                     continue
@@ -1196,11 +1214,12 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         whichview=[x for i,x in enumerate(pixlist_view) if pixlist_hemi[i]=='left']
         
         #pad matching L/R pairs to the same height
-        
-        for i in range(len(pixlist_left)):
-            pixlist_left[i],pixlist_right[i]=pad_to_max_height([pixlist_left[i],pixlist_right[i]])
-        
-        pixlist_stack=np.hstack((np.vstack(pixlist_left),np.vstack(pixlist_right)))
+        if "left" in pixlist_hemi and "right" in pixlist_hemi:
+            for i in range(len(pixlist_left)):
+                pixlist_left[i],pixlist_right[i]=pad_to_max_height([pixlist_left[i],pixlist_right[i]])
+            pixlist_stack=np.hstack((np.vstack(pixlist_left),np.vstack(pixlist_right)))
+        else:
+            pixlist_stack=np.vstack(pixlist)
     else:
         pixlist_stack=[]
     
@@ -1428,6 +1447,7 @@ def run_montageplot(argv=None):
     inputfile=args.inputfile
     inputfieldname=args.inputfieldname
     viewnames=flatarglist(args.viewnames)
+    hemis=flatarglist(args.hemis)
     outputimage=args.outputimage
     surftype=args.surftype
     clim=flatarglist(args.clim)
@@ -1592,7 +1612,7 @@ def run_montageplot(argv=None):
         raise Exception("Invalid inputfile: %s" % (inputfile))
     
     img=create_montage_figure(roivals,atlasinfo=atlas_info,
-        viewnames=viewnames,surftype=surftype,clim=clim,colormap=cmap,noshading=no_shading,
+        viewnames=viewnames,surftype=surftype,clim=clim,colormap=cmap,noshading=no_shading,hemis=hemis,
         outputimagefile=outputimage,upscale_factor=upscale_factor,slicestack_direction=stackdirection,
         slice_dict=slicedict,mosaic_dict=slicemosaic_dict,slicestack_order=slicedict_order,slice_background_alpha=slice_background_alpha,
         slice_zoom=slice_zoom,
