@@ -61,10 +61,11 @@ def parse_argument_montageplot(argv):
     slice_arg_group.add_argument('--stackdir',action='store',dest='stackdirection',default='horizontal',help='Stack surf+slices horizontal or vertical')
     slice_arg_group.add_argument('--slicebgalpha',action='store',dest='slice_background_alpha',type=float,default=1,help='Opacity of slice background volume')
     slice_arg_group.add_argument('--slicezoom',action='store',dest='slice_zoom',type=float,default=1,help='Zoom in on slice images (and crop. 1=no zoom. Valid > 1)')
-
+    
     atlasname_arg_group=parser.add_argument_group('Atlas option 1: atlas name')
-    atlasname_arg_group.add_argument('--atlasname',action='store',dest='atlasname')
-
+    atlasname_arg_group.add_argument('--atlasname',action='store',dest='atlasname',help="Name of atlas to use, or <subparc>@atlasname for a parcellation on the atlas (eg: myfile.dlabel.nii@cifti91). Use '--atlasname list' to see available atlases")
+    atlasname_arg_group.add_argument('--subparcellation',action='store',dest='atlas_subparcfile',help="Sub-parcellation file to use with atlasname (if not specified in atlasname with @: eg --subparc myfile.dlabel.nii --atlasname cifti91)")
+    
     atlasopt_arg_group=parser.add_argument_group('Atlas option 2: atlas details')
     atlasopt_arg_group.add_argument('--roilut',action='store',dest='roilutfile')
     atlasopt_arg_group.add_argument('--lhannot',action='store',dest='lhannotfile')
@@ -329,6 +330,7 @@ def retrieve_atlas_info(atlasname, lookup=False, atlasinfo_jsonfile=None, script
         atlasinfo_jsonfile="%s/atlas_info.json" % (get_data_dir("atlas"))
     
     roicount=None
+    roicount_partial=None
     lhannotprefix=""
     rhannotprefix=""
     subcortfile=""
@@ -368,6 +370,9 @@ def retrieve_atlas_info(atlasname, lookup=False, atlasinfo_jsonfile=None, script
             lhlookupannotfile=atlas_info_list[atlasname]['lhannot_lookup'].replace('%SCRIPTDIR%',scriptdir)
         if "rhannot_lookup" in atlas_info_list[atlasname]:
             rhlookupannotfile=atlas_info_list[atlasname]['rhannot_lookup'].replace('%SCRIPTDIR%',scriptdir)
+            
+        if 'roicount_partial' in atlas_info_list[atlasname]:
+            roicount_partial=atlas_info_list[atlasname]['roicount_partial']
     else:
         raise Exception("atlas name '%s' not found. Choose from %s" % (atlasname, ",".join(atlas_info_list.keys())))
     
@@ -376,7 +381,7 @@ def retrieve_atlas_info(atlasname, lookup=False, atlasinfo_jsonfile=None, script
         rhannotfile=rhlookupannotfile
         annotsurfacename=lookupsurface
         
-    atlasinfo={'atlasname':atlasname,'roicount':roicount,'roilutfile':roilutfile,'lhannotfile':lhannotfile,'rhannotfile':rhannotfile,
+    atlasinfo={'atlasname':atlasname,'roicount':roicount,'roicount_partial':roicount_partial,'roilutfile':roilutfile,'lhannotfile':lhannotfile,'rhannotfile':rhannotfile,
         'annotsurfacename':annotsurfacename,'lhannotprefix':lhannotprefix,'rhannotprefix':rhannotprefix,
         'subcorticalvolume':subcortfile}
     
@@ -960,9 +965,9 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         atlasinfo['lhannotprefix']=lhannotprefix
         atlasinfo['rhannotprefix']=rhannotprefix
         atlasinfo['subcorticalvolume']=subcorticalvolume
-
+    
     atlasname=atlasinfo['atlasname']
-
+    
     if isinstance(colormap,str) and colormap.lower()=='lut' and atlasinfo['roilutfile'] is not None:
         #generate new colormap and roivals from LUT
         if not os.path.exists(atlasinfo['roilutfile']):
@@ -978,7 +983,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
             cmapdata/=255
         
         cmapdata=np.clip(cmapdata,0,1)
-
+    
         print("For cmapfile=%s, override input values and clim to display LUT colormap: %s." % (colormap,atlasinfo['roilutfile']))
         colormap=ListedColormap(cmapdata)
         roivals=np.arange(cmapdata.shape[0])+1
@@ -988,6 +993,28 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         cmapdata=np.random.random([len(roivals),3])
         colormap=ListedColormap(cmapdata)
         print("Using random colormap with %d entries." % (len(roivals)))
+    
+    #in case we want to reference the original roivals later
+    roivals_input=roivals
+    if 'subparcfile' in atlasinfo and atlasinfo['subparcfile'] is not None:
+        if atlasinfo['subparcfile'].lower().endswith('.dlabel.nii') or atlasinfo['subparcfile'].lower().endswith('.dscalar.nii'):
+            P=nib.load(atlasinfo['subparcfile']).get_fdata().flatten().astype(int)
+            if 'roicount_partial' in atlasinfo and P.shape[0]==atlasinfo['roicount_partial']:
+                #use alternate roicount (eg: 59k for cifti cortex-only)
+                Pnew=np.zeros(atlasinfo['roicount'])
+                Pnew[:P.shape[0]]=P
+                P=Pnew
+            elif P.shape[0]!=atlasinfo['roicount']:
+                raise Exception("Subparc file must match atlas dimensions. Found %d, expected %d." % (P.shape[0],atlasinfo['roicount']))
+            
+            if roivals is not None:
+                if len(roivals)==np.max(P):
+                    roivals=np.ones(atlasinfo['roicount'])*np.nan
+                    for i,v in enumerate(roivals_input):
+                        if (i+1) in P:
+                            roivals[P==i+1]=v
+                elif len(roivals)>1 and np.max(roivals)<np.max(P):
+                    raise Exception("roivals length does not match subparc max value. Found %d, expected at least %d." % (len(roivals),np.max(P)))
     
     #just to make things easier now that we are inside the function
     shading=not noshading
@@ -1006,7 +1033,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         else:
             raise Exception("Slicestack order options must be one of: axial, coronal, sagittal")
     
-
+    
     #rescale values (and clim) to [0,1000] so that plot_roi doesn't have issues with near-zero values
     zeroval=1e-8
     roivals=roivals.flatten()
@@ -1467,6 +1494,7 @@ def run_montageplot(argv=None):
     lhannotprefix=args.lhannotprefix
     rhannotprefix=args.rhannotprefix
     subcortvolfile=args.subcortvol
+    atlas_subparcfile=args.atlas_subparcfile
     
     upscale_factor=args.upscale
     no_lookup=args.no_lookup
@@ -1497,7 +1525,7 @@ def run_montageplot(argv=None):
         clear_cache('lookup')
     elif args.clear_all_cache:
         clear_cache('all')
-        
+    
 
     slicemosaic_dict={'axial':args.axmosaic,'coronal':args.cormosaic,'sagittal':args.sagmosaic}
     slicedict={}
@@ -1557,8 +1585,16 @@ def run_montageplot(argv=None):
             for a in retrieve_atlas_info("list"):
                 print("  %s" % (a))
             exit(0)
+        if '@' in atlasname:
+            atlas_subparcfile,atlasname=atlasname.split('@')
         atlasname=atlasname.lower()
         atlas_info=retrieve_atlas_info(atlasname)
+        atlas_info['subparcfile']=atlas_subparcfile                
+    else:
+        atlas_info={'atlasname':None,'roilutfile':roilutfile,'lhannotfile':lhannotfile,'rhannotfile':rhannotfile,
+            'annotsurfacename':annotsurfacename,'lhannotprefix':lhannotprefix,'rhannotprefix':rhannotprefix,'subcorticalvolume':subcortvolfile,
+            'subparcfile':atlas_subparcfile}
+    
     roivals=None
     if len(inputvals_arg)>0:
         roivals=np.array(inputvals_arg).astype(float)
@@ -1567,7 +1603,6 @@ def run_montageplot(argv=None):
     elif inputfile.lower().endswith(".csv"):
         roivals=np.loadtxt(inputfile,delimiter=",")
     elif inputfile.lower().endswith(".mat"):
-        
         Mroivals=loadmat(inputfile)
         mkeys=[k for k in Mroivals.keys() if not k.startswith("__")]
         if len(mkeys)==1:
@@ -1577,13 +1612,6 @@ def run_montageplot(argv=None):
             roivals=Mroivals[inputfieldname]
         else:
             raise Exception("Multiple data fields found in %s. Specify one with --inputfield:",mkeys)
-    
-    if atlasname is not None:
-        atlasname=args.atlasname.lower()
-        atlas_info=retrieve_atlas_info(atlasname)
-    else:
-        atlas_info={'atlasname':None,'roilutfile':roilutfile,'lhannotfile':lhannotfile,'rhannotfile':rhannotfile,
-            'annotsurfacename':annotsurfacename,'lhannotprefix':lhannotprefix,'rhannotprefix':rhannotprefix,'subcorticalvolume':subcortvolfile}
     
     surftype_allowed=['white','inflated','pial','semi','mid','flat']
     try:
@@ -1601,7 +1629,6 @@ def run_montageplot(argv=None):
         print("facemode must be one of: %s" % (",".join(facemode_allowed)))
         exit(1)
     
-        
     #nilearn uses 'Spectral' instead of matplotlib 'spectral'
     if isinstance(cmapname,str) and cmapname.lower()=='lut':
         cmap='lut'
