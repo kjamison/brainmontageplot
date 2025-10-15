@@ -894,7 +894,7 @@ def add_colorbar_to_image(img,colorbar_color=None,colorbar_fontsize=None,colorba
     return newimg
     
 def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
-    roilutfile=None,lhannotfile=None,rhannotfile=None,annotsurfacename='fsaverage5',lhannotprefix=None, rhannotprefix=None, subcorticalvolume=None,
+    roilutfile=None,lhannotfile=None,rhannotfile=None,annotsurfacename='fsaverage5',lhannotprefix=None, rhannotprefix=None, subcorticalvolume=None,subparcfile=None,
     viewnames=None,surftype='infl',clim=None,colormap=None, noshading=False, upscale_factor=1, backgroundcolor="white", hemis='both', 
     slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal', slice_background_alpha=1, slice_zoom=None,
     outputimagefile=None, figdpi=200, no_lookup=False, create_lookup=False,face_mode='mode',face_best_mode_iters=5,
@@ -953,7 +953,11 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         hemis[ih]=h
     
     if atlasname is not None and atlasinfo is None:
+        if '@' in atlasname:
+            subparcfile,atlasname=atlasname.split('@')
+        atlasname=atlasname.lower()
         atlasinfo=retrieve_atlas_info(atlasname)
+        atlasinfo['subparcfile']=subparcfile
     
     if atlasinfo is None:
         atlasinfo={}
@@ -965,6 +969,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         atlasinfo['lhannotprefix']=lhannotprefix
         atlasinfo['rhannotprefix']=rhannotprefix
         atlasinfo['subcorticalvolume']=subcorticalvolume
+        atlasinfo['subparcfile']=subparcfile
     
     atlasname=atlasinfo['atlasname']
     
