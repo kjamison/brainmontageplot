@@ -932,7 +932,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     
     if isinstance(hemis,str):
         hemis=[hemis.lower()]
-    elif hemis is None:
+    elif hemis is None or len(hemis)==0:
         hemis=['left','right']
     else:
         hemis=[h.lower() for h in hemis]
@@ -983,6 +983,11 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         colormap=ListedColormap(cmapdata)
         roivals=np.arange(cmapdata.shape[0])+1
         clim=[0.5,cmapdata.shape[0]+.5]
+    
+    if isinstance(colormap,str) and colormap.lower()=='random':
+        cmapdata=np.random.random([len(roivals),3])
+        colormap=ListedColormap(cmapdata)
+        print("Using random colormap with %d entries." % (len(roivals)))
     
     #just to make things easier now that we are inside the function
     shading=not noshading
@@ -1546,6 +1551,14 @@ def run_montageplot(argv=None):
     if inputfile is None:
         inputfile=""
     
+    if atlasname is not None:
+        if atlasname.lower()=='list':
+            print("Available atlases:")
+            for a in retrieve_atlas_info("list"):
+                print("  %s" % (a))
+            exit(0)
+        atlasname=atlasname.lower()
+        atlas_info=retrieve_atlas_info(atlasname)
     roivals=None
     if len(inputvals_arg)>0:
         roivals=np.array(inputvals_arg).astype(float)
@@ -1592,7 +1605,11 @@ def run_montageplot(argv=None):
     #nilearn uses 'Spectral' instead of matplotlib 'spectral'
     if isinstance(cmapname,str) and cmapname.lower()=='lut':
         cmap='lut'
-        roivals=1 #placeholder
+        roivals=[1] #placeholder
+    elif isinstance(cmapname,str) and cmapname.lower()=='list':
+        for c in list(plt.colormaps.keys())+['lut','random']:
+            print("  %s" % (c))
+        exit(0)
     else:
         try:
             cmap=stringfromlist(cmapname,list(plt.colormaps.keys()),allow_startswith=False)
