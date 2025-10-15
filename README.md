@@ -14,6 +14,8 @@ Requirements: python3 (<3.11 for now!), nilearn (for main plotting functions), n
 * hcpmmp: 360 region cortical atlas from [Glasser 2016](https://pubmed.ncbi.nlm.nih.gov/27437579/)
 * coco439: 81 subcortical regions + 360 region cortical atlas from [Glasser 2016](https://pubmed.ncbi.nlm.nih.gov/27437579/)
 * cifti91k: Renders 32k_fs_LR data (91282 values = 29696 L verts + 29716 R verts + 31870 subcort voxels), e.g., from HCP pipelines
+    * brainmontage also now supports rendering parcellations saved as cifti91k .dlabel.nii or .dscalar.nii. See --subparcellation or creat_montage_figure(...,subparcfile=...)
+    * Can also specify a dscalar.nii or dtseries.nii file as the input data for atlas cifti91k
 
 Installation:
 ```
@@ -26,13 +28,17 @@ pip install .
 Usage:
 ```
 brainmontage 
-[--input INPUTFILE]                 file with value for each ROI. Can be .txt or .mat
+# Input value options:
+[--input INPUTFILE]                 file with value for each ROI. Can be .txt or .mat  (or CIFTI for atlas cifti91k)
 [--inputfield INPUTFIELDNAME]       for .mat input with multiple variables, which variable name to use
+[--inputmapindex INPUTMAXINDEX]     0-based index for which map in a multi-map input file to render (FIRST dimension of input)
 [--inputvals val1 val2 val3 ...]    provide values for each ROI directly from commmand line
+
 --views VIEWNAME VIEWNAME ...       choose from: dorsal, lateral, medial, ventral, anterior, posterior (or none). default: all
 --outputimage OUTPUTIMAGE           image file to save final montage
 --surftype SURFTYPE                 choose from: infl, white, pial, mid, semi (semi-inflated). default: infl
---colormap CMAPNAME                 colormap name from matplotlib colormaps (or "lut" for RGB from atlas LUT)
+--hemis [HEMIS ...]                 left, right, or both. default: both
+--colormap CMAPNAME                 colormap name from matplotlib colormaps (or "lut" for RGB from atlas LUT, or "random")
 [--cmapfile CMAPFILE]               .txt file with R,G,B values on each line for some colormap 
 --clim MIN MAX                      colormap value range
 --upscale SCALE                     higher value to render images at higher resolution (default=1)
@@ -63,7 +69,10 @@ brainmontage
 --slicezoom ZOOMVAL                 Zoom (and crop) volume slices (range >=1. default=1)
 
 # atlas info option 1:
-[--atlasname ATLASNAME]             atlas name for entry in atlas_info.json
+[--atlasname ATLASNAME]             atlas name for entry in atlas_info.json (See --atlasname list for available)
+--subparcellation SUBPARCFILE       Sub-parcellation file to use with atlasname. 
+                                    If --atlasname cifti91, this can be any cifti91k .dlabel.nii or .dscalar.nii 
+                                        with 91k (surf+vox) or 59k (cortex only) parcellation indices.
 
 # atlas info option 2:
 [--roilut ROILUTFILE]               if not providing atlasname, must provide roilut, lhannot, rhannot files
@@ -92,6 +101,29 @@ Example command-line usage: Surface views with LUT ROI colors
 ```
 brainmontage --atlasname fs86med --colormap lut \
     --outputimage mydata_fs86med_lut_montage.png
+```
+
+Example command-line usage: Surface views with subparc dlabel.nii on cifti91k
+```
+brainmontage --input examples/mydata_4S1056.mat --inputfield data --atlasname cifti91k 
+    --subparc path/to/tpl-fsLR_atlas-4S1056Parcels_den-91k_dseg.dlabel.nii \
+    --colormap magma --clim -1 1 --slices ax 23 33 43 53 --axmosaic -1 1 \
+    --outputimage mydata_4S1056_montage_withslices.png 
+```
+
+Example command-line usage: Surface views and slices for a cifti map:
+```
+brainmontage --input S1200_7T_Retinotopy181.Fit3_R2_MSMAll.32k_fs_LR.dscalar.nii \
+    --atlasname cifti91k 
+    --colormap turbo --clim 0 50 --slices ax 23 33 43 53 --axmosaic -1 1 \
+    --outputimage mydata_RetR2_montage_withslices.png 
+```
+
+Example command-line usage: Surface views and slices for 6th volume of a parcellated timeseries
+```
+brainmontage --input mydata_fs86_ts.mat --inputfield ts --inputmapindex 5 --atlasname fs86 \ 
+    --colormap turbo --clim 0 50 --slices ax 23 33 43 53 --axmosaic -1 1 \
+    --outputimage mydata_fs86ts_vol5_montage_withslices.png 
 ```
 
 Example python function usage:
@@ -130,5 +162,13 @@ img_slices=create_montage_figure(roivals,atlasname='fs86',
     backgroundcolor="lightgray",
     outputimagefile='mydata_montage_onlyslices.png')
 
+#Or use an existing cifti91k dlabel.nii file and supply parcel values to view
+roivals=np.arange(1056)+1 #example for 4S1056 subparc
+img_with_slices=create_montage_figure(roivals,atlasname='cifti91k',
+    subparcfile='path/to/tpl-fsLR_atlas-4S1056Parcels_den-91k_dseg.dlabel.nii',
+    viewnames='all',surftype='infl',clim=[0,1056],colormap='rainbow',
+    slice_dict={'axial':[23,33,43,53]},mosaic_dict={'axial':[-1,1]},
+    outputimagefile='mydata4S1056_montage_withslices.png')
+    
 ```
 <img src="examples/mydata_montage.png" width=25%> <img src="examples/mydata_montage_whitesurf.png" width=25%> <img src="examples/mydata_montage_withslices.png" width=25%> <img src="examples/mydata_montage_withcolorbar.png" width=25%> <img src="examples/mydata_montage_onlyslices.png" width=25%> <img src="examples/mydata_fs86sub_montage.png" width=25%> 

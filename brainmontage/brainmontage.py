@@ -52,7 +52,8 @@ def parse_argument_montageplot(argv):
     input_arg_group.add_argument('--input',action='store',dest='inputfile',help='.mat or .txt file with ROI input values')
     input_arg_group.add_argument('--inputfield',action='store',dest='inputfieldname',help='field name in .mat INPUTFILE')
     input_arg_group.add_argument('--inputvals','--inputvalues',action='append',dest='inputvals',nargs='*',help='Input list of ROI values directly')
-
+    input_arg_group.add_argument('--inputmapindex',action='store',dest='inputmapindex',type=int,default=0,help='Index of map to use in FIRST DIMENSION of multi-map input file (0-based). Default=0')
+    
     slice_arg_group=parser.add_argument_group('Slice view options')
     slice_arg_group.add_argument('--slices',action='append',dest='slices',nargs='*',help='Ex: axial 5 10 15 20 sagittal 10 15 20')
     slice_arg_group.add_argument('--axmosaic',action='store',dest='axmosaic',type=int,nargs=2,help="NUMROW NUMCOL for AXIAL slices")
@@ -954,7 +955,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     
     if atlasname is not None and atlasinfo is None:
         if '@' in atlasname:
-            subparcfile,atlasname=atlasname.split('@')
+            subparcfile,atlasname=atlasname.split('@',1)
         atlasname=atlasname.lower()
         atlasinfo=retrieve_atlas_info(atlasname)
         atlasinfo['subparcfile']=subparcfile
@@ -1500,6 +1501,7 @@ def run_montageplot(argv=None):
     rhannotprefix=args.rhannotprefix
     subcortvolfile=args.subcortvol
     atlas_subparcfile=args.atlas_subparcfile
+    input_map_index=args.inputmapindex
     
     upscale_factor=args.upscale
     no_lookup=args.no_lookup
@@ -1591,7 +1593,7 @@ def run_montageplot(argv=None):
                 print("  %s" % (a))
             exit(0)
         if '@' in atlasname:
-            atlas_subparcfile,atlasname=atlasname.split('@')
+            atlas_subparcfile,atlasname=atlasname.split('@',1)
         atlasname=atlasname.lower()
         atlas_info=retrieve_atlas_info(atlasname)
         atlas_info['subparcfile']=atlas_subparcfile                
@@ -1601,6 +1603,13 @@ def run_montageplot(argv=None):
             'subparcfile':atlas_subparcfile}
     
     roivals=None
+    if inputfile is not None and ',' in inputfile:
+        inputfile,inputfile_tmpindex=inputfile.split(',',1)
+        try:
+            input_map_index=int(inputfile_tmpindex)
+        except:
+            raise Exception("Invalid input map index:",inputfile_tmpindex)
+    
     if len(inputvals_arg)>0:
         roivals=np.array(inputvals_arg).astype(float)
     elif inputfile.lower().endswith(".txt"):
@@ -1617,6 +1626,21 @@ def run_montageplot(argv=None):
             roivals=Mroivals[inputfieldname]
         else:
             raise Exception("Multiple data fields found in %s. Specify one with --inputfield:",mkeys)
+    elif any([inputfile.lower().endswith(ext) for ext in ['.dscalar.nii','.dlabel.nii','.dtseries.nii']]):
+        roivals=nib.load(inputfile).get_fdata()
+    
+    if roivals.ndim>1 and roivals.shape[1]>1:
+        print("Input file has %d maps. Using map index %d." % (roivals.shape[0],input_map_index))
+        roivals=roivals[input_map_index,:]
+    
+    if 'roicount_partial' in atlas_info and roivals.shape[0]==atlas_info['roicount_partial']:
+        #use alternate roicount (eg: 59k for cifti cortex-only)
+        roivals_new=np.ones(atlas_info['roicount'])*np.nan
+        roivals_new[:roivals.shape[0]]=roivals
+        roivals=roivals_new
+    elif roivals.shape[0]!=atlas_info['roicount']:
+        raise Exception("Input file must match atlas dimensions. Found %d, expected %d." % (roivals.shape[0],atlas_info['roicount']))
+    
     
     surftype_allowed=['white','inflated','pial','semi','mid','flat']
     try:
