@@ -49,10 +49,13 @@ def parse_argument_montageplot(argv):
     parser.add_argument('--bestmodeiters',action='store',dest='bestmodeiter',default=5,type=int,help='For "best" facemode, how many selection smoothing iterations?')
 
     input_arg_group=parser.add_argument_group('Input value options')
-    input_arg_group.add_argument('--input',action='store',dest='inputfile',help='.mat or .txt file with ROI input values')
+    input_arg_group.add_argument('--input','--inputfile',action='store',dest='inputfile',help='.mat or .txt file with ROI input values')
     input_arg_group.add_argument('--inputfield',action='store',dest='inputfieldname',help='field name in .mat INPUTFILE')
     input_arg_group.add_argument('--inputvals','--inputvalues',action='append',dest='inputvals',nargs='*',help='Input list of ROI values directly')
     input_arg_group.add_argument('--inputmapindex',action='store',dest='inputmapindex',type=int,default=0,help='Index of map to use in FIRST DIMENSION of multi-map input file (0-based). Default=0')
+    
+    input_arg_group.add_argument('--inputmask','--inputmaskfile',action='store',dest='inputmaskfile',help='.mat or .txt file with ROI input values for mask (1=show, 0=hide)')
+    input_arg_group.add_argument('--inputmaskvals','--inputmaskvalues',action='append',dest='inputmaskvals',nargs='*',help='Input list of ROI mask values directly (1=show, 0=hide)')
     
     slice_arg_group=parser.add_argument_group('Slice view options')
     slice_arg_group.add_argument('--slices',action='append',dest='slices',nargs='*',help='Ex: axial 5 10 15 20 sagittal 10 15 20')
@@ -1477,6 +1480,53 @@ def print_cache(which_cache='facemap'):
             print(e)
             print("Could not display cache folder %s" % (d))
 
+
+def load_input_values(inputfile,atlas_info,inputfieldname=None,input_map_index=0,inputvals=[]):
+    roivals=None
+    if inputfile is None:
+        inputfile=""
+    
+    if inputfile is not None and ',' in inputfile:
+        inputfile,inputfile_tmpindex=inputfile.split(',',1)
+        try:
+            input_map_index=int(inputfile_tmpindex)
+        except:
+            raise Exception("Invalid input map index:",inputfile_tmpindex)
+    
+    if len(inputvals)>0:
+        roivals=np.array(inputvals).astype(float)
+    elif inputfile.lower().endswith(".txt"):
+        roivals=np.loadtxt(inputfile)
+    elif inputfile.lower().endswith(".csv"):
+        roivals=np.loadtxt(inputfile,delimiter=",")
+    elif inputfile.lower().endswith(".mat"):
+        Mroivals=loadmat(inputfile)
+        mkeys=[k for k in Mroivals.keys() if not k.startswith("__")]
+        if len(mkeys)==1:
+            print("Only one field found in %s. Loading '%s'." % (inputfile,mkeys[0]))
+            roivals=Mroivals[mkeys[0]]
+        elif inputfieldname in mkeys:
+            roivals=Mroivals[inputfieldname]
+        else:
+            raise Exception("Multiple data fields found in %s. Specify one with --inputfield:",mkeys)
+    elif any([inputfile.lower().endswith(ext) for ext in ['.dscalar.nii','.dlabel.nii','.dtseries.nii']]):
+        roivals=nib.load(inputfile).get_fdata()
+    
+    if roivals is not None:
+        if roivals.ndim>1 and roivals.shape[1]>1:
+            print("Input file has %d maps. Using map index %d." % (roivals.shape[0],input_map_index))
+            roivals=roivals[input_map_index,:]
+        
+        if 'roicount_partial' in atlas_info and roivals.shape[0]==atlas_info['roicount_partial']:
+            #use alternate roicount (eg: 59k for cifti cortex-only)
+            roivals_new=np.ones(atlas_info['roicount'])*np.nan
+            roivals_new[:roivals.shape[0]]=roivals
+            roivals=roivals_new
+        elif roivals.shape[0]!=atlas_info['roicount']:
+            raise Exception("Input file must match atlas dimensions. Found %d, expected %d." % (roivals.shape[0],atlas_info['roicount']))
+    
+    return roivals
+
 def run_montageplot(argv=None):
     if argv is None:
         argv=sys.argv[1:]
@@ -1502,6 +1552,10 @@ def run_montageplot(argv=None):
     subcortvolfile=args.subcortvol
     atlas_subparcfile=args.atlas_subparcfile
     input_map_index=args.inputmapindex
+    
+    inputvals_arg=flatarglist(args.inputvals)
+    inputmaskfile=args.inputmaskfile
+    inputmaskvals_arg=flatarglist(args.inputmaskvals)
     
     upscale_factor=args.upscale
     no_lookup=args.no_lookup
@@ -1576,7 +1630,7 @@ def run_montageplot(argv=None):
         except:
             raise Exception("Invalid --bgrgb entry:",args.bgrgb,". Must be R G B triplet 0-1.0")
 
-    inputvals_arg=flatarglist(args.inputvals)
+
     
     if len(clim)==2:
         clim=[np.float32(x) for x in clim]
@@ -1602,45 +1656,10 @@ def run_montageplot(argv=None):
             'annotsurfacename':annotsurfacename,'lhannotprefix':lhannotprefix,'rhannotprefix':rhannotprefix,'subcorticalvolume':subcortvolfile,
             'subparcfile':atlas_subparcfile}
     
-    roivals=None
-    if inputfile is not None and ',' in inputfile:
-        inputfile,inputfile_tmpindex=inputfile.split(',',1)
-        try:
-            input_map_index=int(inputfile_tmpindex)
-        except:
-            raise Exception("Invalid input map index:",inputfile_tmpindex)
-    
-    if len(inputvals_arg)>0:
-        roivals=np.array(inputvals_arg).astype(float)
-    elif inputfile.lower().endswith(".txt"):
-        roivals=np.loadtxt(inputfile)
-    elif inputfile.lower().endswith(".csv"):
-        roivals=np.loadtxt(inputfile,delimiter=",")
-    elif inputfile.lower().endswith(".mat"):
-        Mroivals=loadmat(inputfile)
-        mkeys=[k for k in Mroivals.keys() if not k.startswith("__")]
-        if len(mkeys)==1:
-            print("Only one field found in %s. Loading '%s'." % (inputfile,mkeys[0]))
-            roivals=Mroivals[mkeys[0]]
-        elif inputfieldname in mkeys:
-            roivals=Mroivals[inputfieldname]
-        else:
-            raise Exception("Multiple data fields found in %s. Specify one with --inputfield:",mkeys)
-    elif any([inputfile.lower().endswith(ext) for ext in ['.dscalar.nii','.dlabel.nii','.dtseries.nii']]):
-        roivals=nib.load(inputfile).get_fdata()
-    
-    if roivals.ndim>1 and roivals.shape[1]>1:
-        print("Input file has %d maps. Using map index %d." % (roivals.shape[0],input_map_index))
-        roivals=roivals[input_map_index,:]
-    
-    if 'roicount_partial' in atlas_info and roivals.shape[0]==atlas_info['roicount_partial']:
-        #use alternate roicount (eg: 59k for cifti cortex-only)
-        roivals_new=np.ones(atlas_info['roicount'])*np.nan
-        roivals_new[:roivals.shape[0]]=roivals
-        roivals=roivals_new
-    elif roivals.shape[0]!=atlas_info['roicount']:
-        raise Exception("Input file must match atlas dimensions. Found %d, expected %d." % (roivals.shape[0],atlas_info['roicount']))
-    
+    roivals=load_input_values(inputfile,atlas_info,inputfieldname=inputfieldname,input_map_index=input_map_index,inputvals=inputvals_arg)
+    maskvals=load_input_values(inputmaskfile,atlas_info,inputfieldname=inputfieldname,input_map_index=input_map_index,inputvals=inputmaskvals_arg)
+    if roivals is not None and maskvals is not None and len(maskvals)==len(roivals):
+        roivals[(maskvals==0) | np.isnan(maskvals)]=np.nan
     
     surftype_allowed=['white','inflated','pial','semi','mid','flat']
     try:
