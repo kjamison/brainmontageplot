@@ -998,7 +998,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
         roivals=np.arange(cmapdata.shape[0])+1
         clim=[0.5,cmapdata.shape[0]+.5]
     
-    if isinstance(colormap,str) and colormap.lower()=='random':
+    if isinstance(colormap,str) and colormap.lower() in ['random','rand']:
         cmapdata=np.random.random([len(roivals),3])
         colormap=ListedColormap(cmapdata)
         print("Using random colormap with %d entries." % (len(roivals)))
@@ -1517,7 +1517,10 @@ def load_input_values(inputfile,atlas_info,inputfieldname=None,input_map_index=0
             print("Input file has %d maps. Using map index %d." % (roivals.shape[0],input_map_index))
             roivals=roivals[input_map_index,:]
         
-        if 'roicount_partial' in atlas_info and roivals.shape[0]==atlas_info['roicount_partial']:
+        if 'subparcfile' in atlas_info and atlas_info['subparcfile'] is not None:
+            #no info yet about how many regions are in the subparc file, so just skip this check
+            pass
+        elif 'roicount_partial' in atlas_info and roivals.shape[0]==atlas_info['roicount_partial']:
             #use alternate roicount (eg: 59k for cifti cortex-only)
             roivals_new=np.ones(atlas_info['roicount'])*np.nan
             roivals_new[:roivals.shape[0]]=roivals
@@ -1682,7 +1685,7 @@ def run_montageplot(argv=None):
         cmap='lut'
         roivals=[1] #placeholder
     elif isinstance(cmapname,str) and cmapname.lower()=='list':
-        for c in list(plt.colormaps.keys())+['lut','random']:
+        for c in list(plt.colormaps.keys())+['lut','random','rand']:
             print("  %s" % (c))
         exit(0)
     else:
