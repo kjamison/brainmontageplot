@@ -318,7 +318,7 @@ def read_lut(lutfile=None,atlasname=None,atlasinfo=None):
         for c in expected_lut_columns[Xlut.shape[1]:]:
             Troi[c]=np.nan*np.ones(Troi.shape[0])
     else:
-        Troi=pd.read_table(lutfile,delimiter='\s+',header=None,names=expected_lut_columns)
+        Troi=pd.read_table(lutfile,delimiter=r'\s+',header=None,names=expected_lut_columns)
 
     #remove any entries for 'Unknown' or '???'
     Troi=Troi[Troi['name']!='Unknown']
