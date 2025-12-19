@@ -391,6 +391,34 @@ def retrieve_atlas_info(atlasname, lookup=False, atlasinfo_jsonfile=None, script
     
     return atlasinfo
 
+def map_regions_to_subparc(roivals=None, atlasinfo={}, P=None, return_parc=False):
+    if P is None and 'subparcfile' in atlasinfo and atlasinfo['subparcfile'] is not None:
+        if atlasinfo['subparcfile'].lower().endswith('.dlabel.nii') or atlasinfo['subparcfile'].lower().endswith('.dscalar.nii'):
+            P=nib.load(atlasinfo['subparcfile']).get_fdata().flatten().astype(int)
+            if 'roicount_partial' in atlasinfo and P.shape[0]==atlasinfo['roicount_partial']:
+                #use alternate roicount (eg: 59k for cifti cortex-only)
+                Pnew=np.zeros(atlasinfo['roicount'])
+                Pnew[:P.shape[0]]=P
+                P=Pnew
+            elif P.shape[0]!=atlasinfo['roicount']:
+                raise Exception("Subparc file must match atlas dimensions. Found %d, expected %d." % (P.shape[0],atlasinfo['roicount']))
+    
+    if P is not None:
+        if roivals is not None:
+            roivals_input=roivals
+            if len(roivals)==np.max(P):
+                roivals=np.ones(P.shape[0])*np.nan
+                for i,v in enumerate(roivals_input):
+                    if (i+1) in P:
+                        roivals[P==i+1]=v
+            elif len(roivals)>1 and np.max(roivals)<np.max(P):
+                raise Exception("roivals length does not match subparc max value. Found %d, expected at least %d." % (len(roivals),np.max(P)))
+    
+    if return_parc:
+        return roivals, P
+    else:
+        return roivals
+
 def generate_surface_view_lookup(surf=None,hemi=None,azel=None,figsize=None,figdpi=200,lightdir=None,shading_smooth_iters=1,surfbgvals=None):
     
     if figsize is None:
@@ -1005,25 +1033,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     
     #in case we want to reference the original roivals later
     roivals_input=roivals
-    if 'subparcfile' in atlasinfo and atlasinfo['subparcfile'] is not None:
-        if atlasinfo['subparcfile'].lower().endswith('.dlabel.nii') or atlasinfo['subparcfile'].lower().endswith('.dscalar.nii'):
-            P=nib.load(atlasinfo['subparcfile']).get_fdata().flatten().astype(int)
-            if 'roicount_partial' in atlasinfo and P.shape[0]==atlasinfo['roicount_partial']:
-                #use alternate roicount (eg: 59k for cifti cortex-only)
-                Pnew=np.zeros(atlasinfo['roicount'])
-                Pnew[:P.shape[0]]=P
-                P=Pnew
-            elif P.shape[0]!=atlasinfo['roicount']:
-                raise Exception("Subparc file must match atlas dimensions. Found %d, expected %d." % (P.shape[0],atlasinfo['roicount']))
-            
-            if roivals is not None:
-                if len(roivals)==np.max(P):
-                    roivals=np.ones(atlasinfo['roicount'])*np.nan
-                    for i,v in enumerate(roivals_input):
-                        if (i+1) in P:
-                            roivals[P==i+1]=v
-                elif len(roivals)>1 and np.max(roivals)<np.max(P):
-                    raise Exception("roivals length does not match subparc max value. Found %d, expected at least %d." % (len(roivals),np.max(P)))
+    roivals,P_subparc=map_regions_to_subparc(roivals, atlasinfo, return_parc=True)
     
     #just to make things easier now that we are inside the function
     shading=not noshading
