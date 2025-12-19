@@ -1105,18 +1105,19 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     pixlist_view=[]
 
 
-    if border_roimask is not None and len(border_roimask)!=len(roivals):
+    if border_roimask is not None and len(border_roimask)!=len(roivals_input):
         raise Exception("Border roimask must be same length as roivals")
     
     if border_roimask is not None:
-        print("Rendering ROI borders for %d/%d ROIs. This might slow down rendering." % (np.sum(border_roimask>0),len(roivals)))
+        print("Rendering ROI borders for %d/%d ROIs. This might slow down rendering." % (np.sum(border_roimask>0),len(roivals_input)))
     
     #for rendering ROI borders
     border_bgcolor=[0,0,0]
     border_colormap=ListedColormap([[0,0,0],[1,1,1]])
     border_clim=[0,1]
     border_edgefilter=ImageFilter.Kernel((3,3),(-1, -1, -1, -1, 8,-1, -1, -1, -1), 1, 0)
-    
+    max_border_roimask_size=1000 #avoid trying to draw borders for cifti91k, e.g.
+
     if lookup_dict is not None:
         #first map roi indices to surface vertices
         #then map those roi indices to to faces
@@ -1142,14 +1143,28 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
                 #########
                 #render ROI borders
                 roi_edge_mask=None
-                if border_roimask is not None:
+                if border_roimask is not None and len(border_roimask)<=max_border_roimask_size:
                     for r,rmask in enumerate(border_roimask):
-                        if rmask==0 or not np.any(faceroisLR[h]==r):
-                            #ROI is not contained in this cortical hemisphere
-                            continue
-                        
-                        pix_roi=render_surface_lookup(faceroisLR[h]==r,lookup_dict[viewkey],cmap=border_colormap,clim=border_clim,
-                                                backgroundcolor=border_bgcolor,shading=False,braincolor=None)
+                        if P_subparc is not None:
+                            if rmask==0:
+                                continue
+                            rmask_new=map_regions_to_subparc(np.arange(len(roivals_input))==r, atlasinfo={}, P=P_subparc)
+                            facetmp=faceroisLR[h]
+                            facetmp_isnan=np.isnan(facetmp)
+                            facetmp[facetmp_isnan]=0
+                            rmask_new=rmask_new[facetmp.astype(int)]
+                            rmask_new[facetmp_isnan]=np.nan
+                            if not any(rmask_new):
+                                continue
+                            pix_roi=render_surface_lookup(rmask_new,lookup_dict[viewkey],cmap=border_colormap,clim=border_clim,
+                                                    backgroundcolor=border_bgcolor,shading=False,braincolor=None)
+                        else:
+                            if rmask==0 or not np.any(faceroisLR[h]==r):
+                                #ROI is not contained in this cortical hemisphere
+                                continue
+                            
+                            pix_roi=render_surface_lookup(faceroisLR[h]==r,lookup_dict[viewkey],cmap=border_colormap,clim=border_clim,
+                                                    backgroundcolor=border_bgcolor,shading=False,braincolor=None)
                         
                         if np.min(pix_roi[:,:,0])==np.max(pix_roi[:,:,0]):
                             #ROI is not shown in this view
