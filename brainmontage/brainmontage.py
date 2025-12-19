@@ -35,9 +35,9 @@ def parse_argument_montageplot(argv):
     parser=argparse.ArgumentParser(description='Save surface ROI and/or volume slice montage',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--outputimage',action='store',dest='outputimage',help='Filename for output image')
-    parser.add_argument('--views',action='append',dest='viewnames',nargs='*',help='list of: dorsal, ventral, medial, lateral, anterior, posterior, or none')
+    parser.add_argument('--views','--view',action='append',dest='viewnames',nargs='*',help='list of: dorsal, ventral, medial, lateral, anterior, posterior, or none')
     parser.add_argument('--surftype',action='store',dest='surftype',default='infl',help='inflated, white, pial')
-    parser.add_argument('--hemis',action='append',dest='hemis',nargs='*',help='left, right, or both (default)')
+    parser.add_argument('--hemis','--hemi',action='append',dest='hemis',nargs='*',help='left, right, or both (default)')
     parser.add_argument('--cmap','--colormap',action='store',dest='cmapname',default='magma')
     parser.add_argument('--cmapfile','--colormapfile',action='store',dest='cmapfile')
     parser.add_argument('--clim', action='append',dest='clim',nargs=2)
@@ -47,7 +47,10 @@ def parse_argument_montageplot(argv):
     parser.add_argument('--backgroundrgb','--bgrgb',action='store',dest='bgrgb',type=float,nargs=3,help='Background color R G B (0-1.0)')
     parser.add_argument('--facemode',action='store',dest='facemode',default='mode',help='How to map vertices to faces: mode (default), mean, or best (slow)')
     parser.add_argument('--bestmodeiters',action='store',dest='bestmodeiter',default=5,type=int,help='For "best" facemode, how many selection smoothing iterations?')
-
+    
+    parser.add_argument('--braincolor',action='store',dest='braincolorname',help='Brain color name (for non-labeled brain surface). Lookups only.')
+    parser.add_argument('--braincolorrgb','--brainrgb',action='store',dest='brainrgb',type=float,nargs=3,help='Brain color R G B (0-1.0). Lookups only.')
+    
     input_arg_group=parser.add_argument_group('Input value options')
     input_arg_group.add_argument('--input','--inputfile',action='store',dest='inputfile',help='.mat or .txt file with ROI input values')
     input_arg_group.add_argument('--inputfield',action='store',dest='inputfieldname',help='field name in .mat INPUTFILE')
@@ -56,6 +59,7 @@ def parse_argument_montageplot(argv):
     
     input_arg_group.add_argument('--inputmask','--inputmaskfile',action='store',dest='inputmaskfile',help='.mat or .txt file with ROI input values for mask (1=show, 0=hide)')
     input_arg_group.add_argument('--inputmaskvals','--inputmaskvalues',action='append',dest='inputmaskvals',nargs='*',help='Input list of ROI mask values directly (1=show, 0=hide)')
+
     
     slice_arg_group=parser.add_argument_group('Slice view options')
     slice_arg_group.add_argument('--slices',action='append',dest='slices',nargs='*',help='Ex: axial 5 10 15 20 sagittal 10 15 20')
@@ -87,6 +91,13 @@ def parse_argument_montageplot(argv):
     cbar_arg_group.add_argument('--colorbartext',action='store',dest='colorbar_label',help='Text to to add to colorbar')
     cbar_arg_group.add_argument('--colorbartextrotation',action='store_true',dest='colorbar_label_rotation',help='Rotate colorbar text 180deg')
 
+    border_arg_group=parser.add_argument_group('Border options')
+    border_arg_group.add_argument('--inputborder','--inputborderfile',action='store',dest='inputborderfile',help='.mat or .txt file with ROI input values for drawing border (1=border, 0=no border)')
+    border_arg_group.add_argument('--inputbordervals','--inputbordervalues',action='append',dest='inputbordervals',nargs='*',help='Input list of ROI border values directly (1=border, 0=no border)')
+    border_arg_group.add_argument('--bordercolor',action='store',dest='bordercolorname',default='black',help='Border color name')
+    border_arg_group.add_argument('--borderrgb',action='store',dest='borderrgb',type=float,nargs=3,help='Border color R G B (0-1.0)')
+    border_arg_group.add_argument('--borderwidth',action='store',dest='borderwidth',type=float,default=1,help='Width of border (default=1)')
+    
     misc_arg_group=parser.add_argument_group('Other options')
     misc_arg_group.add_argument('--version',action='store_true',dest='version')
     misc_arg_group.add_argument('--nolookup',action='store_true',dest='no_lookup',help='Do not use saved lookups (mainly for testing)')
@@ -684,7 +695,7 @@ def render_surface_lookup(roivals,lookup,cmap='magma',clim=None,backgroundcolor=
     return newimg_rgb
 
 def render_surface_view(surfvals,surf,azel=None,surfbgvals=None,shading=True,lightdir=None,val_smooth_iters=0,shading_smooth_iters=1,
-                        colormap=None, clim=None,
+                        colormap=None, clim=None, braincolor=None,
                         backgroundcolor=None,figsize=None,figure=None,figdpi=None):
 
     if figsize is None:
@@ -693,6 +704,9 @@ def render_surface_view(surfvals,surf,azel=None,surfbgvals=None,shading=True,lig
     if backgroundcolor is None:
         backgroundcolor=figure.get_facecolor()
 
+    if braincolor is not None:
+        surfbgvals=None
+    
     figure.clear()
     
     if shading and lightdir is not None:
@@ -931,7 +945,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
     slice_dict={}, mosaic_dict={},slicestack_order=['axial','coronal','sagittal'],slicestack_direction='horizontal', slice_background_alpha=1, slice_zoom=None,
     outputimagefile=None, figdpi=200, no_lookup=False, create_lookup=False,face_mode='mode',face_best_mode_iters=5,
     add_colorbar=False, colorbar_color=None, colorbar_fontsize=None,colorbar_location='right',colorbar_label=None, colorbar_label_rotation=False,
-    border_roimask=None, border_color='black',border_width=1):
+    border_roimask=None, border_color='black',border_width=1,braincolor=None):
 
     #default factor=1 is way too big in general, so for surface views scale this down by 25%
     surface_scale_factor=upscale_factor*.25
@@ -1178,7 +1192,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
                             roi_edge_mask=np.maximum(roi_edge_mask,pix_edge)
                 ##########
                 pix=render_surface_lookup(facevalsLR[h],lookup_dict[viewkey],cmap=colormap,clim=clim_rescaled,
-                            backgroundcolor=backgroundcolor,shading=shading,braincolor=None,
+                            backgroundcolor=backgroundcolor,shading=shading,braincolor=braincolor,
                             borderimage=roi_edge_mask,bordercolor=border_color, borderwidth=border_width/surface_scale_factor)
 
                 pix=padimage(pix,bgcolor=None,padamount=1)
@@ -1215,7 +1229,7 @@ def create_montage_figure(roivals,atlasinfo=None, atlasname=None,
                 
                 pix=render_surface_view(surfvals=surfvalsLR[h],surf=surfLR[h],surfbgvals=surfbgvalsLR[h],
                                         azel=azel,lightdir=lightdir,shading=shading,shading_smooth_iters=shading_smooth_iters,
-                                        colormap=colormap, clim=clim_rescaled,
+                                        colormap=colormap, clim=clim_rescaled, braincolor=braincolor,
                                         figure=fig,figdpi=figdpi)
 
                 pix=padimage(pix,bgcolor=None,padamount=1)
@@ -1584,7 +1598,11 @@ def run_montageplot(argv=None):
     inputvals_arg=flatarglist(args.inputvals)
     inputmaskfile=args.inputmaskfile
     inputmaskvals_arg=flatarglist(args.inputmaskvals)
-    
+
+    inputborderfile=args.inputborderfile
+    inputbordervals_arg=flatarglist(args.inputbordervals)
+    borderwidth=args.borderwidth
+
     upscale_factor=args.upscale
     no_lookup=args.no_lookup
     create_lookup=args.create_lookup
@@ -1659,7 +1677,22 @@ def run_montageplot(argv=None):
             raise Exception("Invalid --bgrgb entry:",args.bgrgb,". Must be R G B triplet 0-1.0")
 
 
-    
+    bordercolor=args.bordercolorname
+    if args.borderrgb is not None:
+        bordercolor=args.bgrgb
+        try:
+            tmpcmap=ListedColormap(bgcolor)
+        except:
+            raise Exception("Invalid --borderrgb entry:",args.borderrgb,". Must be R G B triplet 0-1.0")
+
+    braincolor=args.braincolorname
+    if args.brainrgb is not None:
+        braincolor=args.brainrgb
+        try:
+            tmpcmap=ListedColormap(braincolor)
+        except:
+            raise Exception("Invalid --brainrgb entry:",args.brainrgb,". Must be R G B triplet 0-1.0")
+
     if len(clim)==2:
         clim=[np.float32(x) for x in clim]
     else:
@@ -1686,6 +1719,7 @@ def run_montageplot(argv=None):
     
     roivals=load_input_values(inputfile,atlas_info,inputfieldname=inputfieldname,input_map_index=input_map_index,inputvals=inputvals_arg)
     maskvals=load_input_values(inputmaskfile,atlas_info,inputfieldname=inputfieldname,input_map_index=input_map_index,inputvals=inputmaskvals_arg)
+    bordervals=load_input_values(inputborderfile,atlas_info,inputfieldname=inputfieldname,input_map_index=input_map_index,inputvals=inputbordervals_arg)
     if roivals is not None and maskvals is not None and len(maskvals)==len(roivals):
         roivals[(maskvals==0) | np.isnan(maskvals)]=np.nan
     
@@ -1739,7 +1773,8 @@ def run_montageplot(argv=None):
         backgroundcolor=bgcolor,no_lookup=no_lookup,create_lookup=create_lookup,
         face_mode=facemode,face_best_mode_iters=bestmodeiters,
         add_colorbar=add_colorbar, colorbar_color=colorbar_color,colorbar_fontsize=colorbar_fontsize,colorbar_location=colorbar_location,
-        colorbar_label=colorbar_label,colorbar_label_rotation=colorbar_label_rotation)
+        colorbar_label=colorbar_label,colorbar_label_rotation=colorbar_label_rotation,
+        border_roimask=bordervals, border_color=bordercolor, border_width=borderwidth, braincolor=braincolor)
 
 if __name__ == "__main__":
     run_montageplot(sys.argv[1:])
