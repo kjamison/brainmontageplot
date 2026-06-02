@@ -107,6 +107,17 @@
         "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.HCP_MMP1.label.gii",
         "annotsurface_lookup": "fsaverage"
     },
+    "cocoyeo243": {
+        "roicount": 243,
+        "roilut": "%SCRIPTDIR%/atlases/cocoyeo243_LUT.txt",
+        "lhannot": "%SCRIPTDIR%/atlases/lh.Schaefer2018_200Parcels_7Networks_order.annot",
+        "rhannot": "%SCRIPTDIR%/atlases/rh.Schaefer2018_200Parcels_7Networks_order.annot",
+        "subcorticalvolume": "%SCRIPTDIR%/atlases/cocosub43_allsubj_mode.nii.gz",
+        "annotsurface": "fsaverage5",
+        "lhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.lh.Schaefer2018_200Parcels_7Networks_order.label.gii",
+        "rhannot_lookup": "%SCRIPTDIR%/atlases/fsaverage.rh.Schaefer2018_200Parcels_7Networks_order.label.gii",
+        "annotsurface_lookup": "fsaverage"
+    },
     "nsd": {
         "aliases": ["nsd"],
         "roicount": 48,
